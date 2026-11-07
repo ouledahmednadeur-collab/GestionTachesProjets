@@ -3,5 +3,5 @@ public enum StatutTache
 {
     AFaire,
     EnCours,
-    Termine
+    Terminee 
 }
