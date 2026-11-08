@@ -21,11 +21,14 @@ public class TacheRepository : ITacheRepository
             query = query.Where(t=>t.statut ==statut.Value );
         }
         return await PaginerAsync(query,page,pageSize);
+        // pagination fi methode okhra mouc houni 
     }
     public async Task<PagedResult<Tache>> GetByMembreAsync(int membreId ,int page, int pageSize)
     {
         var query  = _context.Taches.Where(t=>t.MembreId==membreId);
         return await PaginerAsync(query,page,pageSize);
+        // hedhi el pagination bech tsir fi methode okhra Paginer kima elli 9balha 
+        // pour ne pas duppliquer le code
     }
     public async Task<Tache?> GetByIdAsync(int id)
     { 
@@ -57,9 +60,20 @@ public class TacheRepository : ITacheRepository
         }
         var terminee = await _context.Taches.CountAsync(t=> t.ProjetId == projetId && t.statut == StatutTache.Terminee);
         return Math.Round(terminee * 100.0 / total,1);
+        // houni bech tehseb les taches f projet  statut mte3hom terminee donc jointure mabin 
+        // projet w tache w countAsync() 
+        // benesba el Math.Round mawjouda fi bibliotheque de classe de base de .NET (BCL)
+        // el bibliotheque hedhi yet3aytelha en arriere plan ki yetkteb
+        //  <ImlicitUsings>enable</ImplicitUsings> fi .csproj 
+        // w yetsna3 fel dossier lmadfoun obj fichier fih des appel okhrin yetlansew 
+        // fi ay fichier tesn3ou fel projet bech direct testaamelhom meghir ma soutek
+        // ybe7 wenti t3ayet hahaha fekra 
     }
     private static async Task<PagedResult<Tache>> PaginerAsync(IQueryable<Tache> query ,int page , int PageSize)
-    
+    // marhbe bik houni methode privee ma3andhech interface testa3melha ken el classe hedhi
+    // houni PaginerAsync t3aytelha el methode GetbyMembreId w GetByProjetId 
+    // houni bech ma naamlouch pagination dupplique fard fichier khater les mem lignes de code
+    // bech yet3awdou benesba lel hkeya hedhi tnajem tir aala el kol il suffit naamlou class n3aytoulha 
     {
         var total = await query.CountAsync();
         var items = await query .OrderBy(t=> t.Id)

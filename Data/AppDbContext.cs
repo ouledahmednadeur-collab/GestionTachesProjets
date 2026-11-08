@@ -19,7 +19,7 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
 public DbSet<Projet> Projets => Set<Projet>();
 /// <summary>
 /// houni nestaamlou fi type generique mel classe DbContext bech kol ma
-/// nest7a9ou _context.Projets Se<Projet>() tekhdem
+/// nest7a9ou _context.Projets tekhdem
 /// </summary>
 public DbSet<Membre> Membres => Set<Membre>();
 public DbSet<Tache> Taches =>Set<Tache>();
@@ -31,7 +31,7 @@ protected override void OnModelCreating(ModelBuilder builder)
                                        // OnModelCreating bech testa3mel el objet builder elli ykhallik
                                        // tnajem taamel configuration lel base de donnees 
 
-        // ki nefskhou membre les tahces mte3ou yo93dou amma ywalliw mahomch affecte 
+        // ki nefskhou membre les taches mte3ou yo93dou amma ywalliw mahomch affecte 
         builder.Entity<Tache>() //Prends la table Tache pour la configurer
         .HasOne(t=>t.Membre) //Chaque tâche est associée à un seul membre
         .WithMany() //un membre peut avoir plusieurs tâches (relation 1-à-plusieurs)
@@ -44,6 +44,7 @@ protected override void OnModelCreating(ModelBuilder builder)
         .HasForeignKey(c=>c.MembreId)
         .OnDelete(DeleteBehavior.Restrict);
     }
+public DbSet<Commentaire> Commentaires=> Set<Commentaire>();
 }
 
 
