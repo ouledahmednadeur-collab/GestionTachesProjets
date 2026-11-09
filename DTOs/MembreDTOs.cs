@@ -6,9 +6,6 @@ public class MembreCreateDto
     [Required(ErrorMessage ="le nom est obligatoire")]
     [MaxLength(100)]
     public string Nom {get;set;}=string.Empty ;
-    [Required(ErrorMessage = "Le nom est obligatoire")]
-    [MaxLength(100)]
-    public string Nom {get;set;}= string.Empty ;
     [Required(ErrorMessage = "L'email est obligatoire ")]
     [EmailAddress(ErrorMessage = "Email Invalide")]
     public string Email {get;set;}=string.Empty ;
