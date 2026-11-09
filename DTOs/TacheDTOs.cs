@@ -16,11 +16,12 @@ public class AffecterTacheDto
 {
     [Range(1, int.MaxValue,ErrorMessage="MembreId Invalide ")]
     public int ProjetId{get;set;}
+    public int MembreId{get;set;}
 }
 public class ChangerStatutDto
 {
-    [Range(1, int.MaxValue,ErrorMessage ="MembreId invalide")]
-    public int MembreId{get;set;}
+    [EnumDataType(typeof(StatutTache),ErrorMessage ="Statut invalide")]
+    public StatutTache Statut {get;set;}
 }
 public class TacheDto
 {
