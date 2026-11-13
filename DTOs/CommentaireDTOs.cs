@@ -7,6 +7,7 @@ public class CommentaireCreateDto
     public string Contenu {get;set;}=string.Empty;
     [Range(1,int.MaxValue,ErrorMessage ="MembreId invalide")]
     public int MembreId {get;set;}
+
 }
 public class CommentaireDto
 {
