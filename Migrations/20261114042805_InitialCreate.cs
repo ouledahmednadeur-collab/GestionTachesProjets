@@ -51,7 +51,7 @@ namespace GestionTachesProjets.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "membres",
+                name: "Membres",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
@@ -61,21 +61,21 @@ namespace GestionTachesProjets.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_membres", x => x.Id);
+                    table.PrimaryKey("PK_Membres", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
                 name: "Projets",
                 columns: table => new
                 {
-                    id = table.Column<int>(type: "INTEGER", nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     Nom = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
                     Description = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Projets", x => x.id);
+                    table.PrimaryKey("PK_Projets", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -200,21 +200,21 @@ namespace GestionTachesProjets.Migrations
                 {
                     table.PrimaryKey("PK_Taches", x => x.Id);
                     table.ForeignKey(
+                        name: "FK_Taches_Membres_MembreId",
+                        column: x => x.MembreId,
+                        principalTable: "Membres",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
                         name: "FK_Taches_Projets_ProjetId",
                         column: x => x.ProjetId,
                         principalTable: "Projets",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_Taches_membres_MembreId",
-                        column: x => x.MembreId,
-                        principalTable: "membres",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
-                name: "Commentaire",
+                name: "Commentaires",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
@@ -226,17 +226,17 @@ namespace GestionTachesProjets.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Commentaire", x => x.Id);
+                    table.PrimaryKey("PK_Commentaires", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Commentaire_Taches_TacheId",
-                        column: x => x.TacheId,
-                        principalTable: "Taches",
+                        name: "FK_Commentaires_Membres_MembreId",
+                        column: x => x.MembreId,
+                        principalTable: "Membres",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Commentaire_membres_MembreId",
-                        column: x => x.MembreId,
-                        principalTable: "membres",
+                        name: "FK_Commentaires_Taches_TacheId",
+                        column: x => x.TacheId,
+                        principalTable: "Taches",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -279,13 +279,13 @@ namespace GestionTachesProjets.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Commentaire_MembreId",
-                table: "Commentaire",
+                name: "IX_Commentaires_MembreId",
+                table: "Commentaires",
                 column: "MembreId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Commentaire_TacheId",
-                table: "Commentaire",
+                name: "IX_Commentaires_TacheId",
+                table: "Commentaires",
                 column: "TacheId");
 
             migrationBuilder.CreateIndex(
@@ -318,7 +318,7 @@ namespace GestionTachesProjets.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
-                name: "Commentaire");
+                name: "Commentaires");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
@@ -330,10 +330,10 @@ namespace GestionTachesProjets.Migrations
                 name: "Taches");
 
             migrationBuilder.DropTable(
-                name: "Projets");
+                name: "Membres");
 
             migrationBuilder.DropTable(
-                name: "membres");
+                name: "Projets");
         }
     }
 }

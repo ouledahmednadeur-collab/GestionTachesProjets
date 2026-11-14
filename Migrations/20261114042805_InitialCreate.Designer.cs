@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GestionTachesProjets.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261106220704_InitialCreate")]
+    [Migration("20261114042805_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -46,7 +46,7 @@ namespace GestionTachesProjets.Migrations
 
                     b.HasIndex("TacheId");
 
-                    b.ToTable("Commentaire");
+                    b.ToTable("Commentaires");
                 });
 
             modelBuilder.Entity("GestionTachesProjets.Models.Membre", b =>
@@ -66,12 +66,12 @@ namespace GestionTachesProjets.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("membres");
+                    b.ToTable("Membres");
                 });
 
             modelBuilder.Entity("GestionTachesProjets.Models.Projet", b =>
                 {
-                    b.Property<int>("id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
@@ -84,7 +84,7 @@ namespace GestionTachesProjets.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
-                    b.HasKey("id");
+                    b.HasKey("Id");
 
                     b.ToTable("Projets");
                 });
