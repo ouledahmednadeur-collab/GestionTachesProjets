@@ -12,9 +12,14 @@ namespace GestionTachesProjets.Controllers ;
 public class ProjetsController :ControllerBase
 {
     private readonly IProjetRepository _repo;
-    public ProjetsController(IProjetRepository repo)
+    private readonly ITacheRepository _taches ;
+    private readonly IProjetRepository _projets ;
+    public ProjetsController(IProjetRepository repo , ITacheRepository taches , IProjetRepository projets)
     {
         _repo=repo ;
+        _taches=taches ;
+        _projets=projets;
+
     }
     [HttpGet]
     public async Task<ActionResult<PagedResult<ProjetDto>>> GetAll(int page=1 , int pageSize=10)
@@ -65,6 +70,14 @@ public async Task<ActionResult<ProjetDto>> GetById(int id)
         var projet = await _repo.GetByIdAsync(id);
         if (projet ==null) return NotFound ();
         return Ok(ToDto(projet));
+    }
+[HttpGet("/api/projets/{projetId}/avancement")]
+    public async Task<ActionResult> GetAvancement(int projetId)
+    {
+        if (await _projets.GetByIdAsync(projetId)==null )
+        return NotFound("projet introuvable");
+        var avancement = await _taches.GetAvancementAsync(projetId);
+        return Ok(new{ProjetId=projetId,Avancement=avancement});
     }
 [HttpPost]
 public async Task<ActionResult<ProjetDto>> Create(ProjetCreateDto dto)

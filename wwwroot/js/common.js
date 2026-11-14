@@ -51,6 +51,7 @@ async function api(path, method = 'GET', body){
   if (!res.ok) {
     let m = typeof data === 'string' && data ? data : (data?.title || 'Erreur ' + res.status);
     if (data?.errors) m = Object.values(data.errors).flat().join(' · ');
+    if (Array.isArray(data)) m = data.map(x => x.description??x.Description?? x).join('.');
     throw new Error(m);
   }
   return data;
@@ -87,7 +88,7 @@ function renderTop(active){
   $('#nav').innerHTML = link('index.html', 'Projets', 'projets') + link('membres.html', 'Membres', 'membres') +
     (s?.admin ? link('roles.html', 'Rôles', 'roles') : '');
   $('#user').innerHTML = s
-    ? `<span class="mail">${esc(s.name)}</span><span class="badge ${s.admin ? 'admin' : ''}">${s.admin ? 'Admin' : 'Membre'}</span><button class="btn small" id="logout">Déconnexion</button>`
+    ? `<span class="badge ${s.admin ? 'admin' : ''}">${esc(s.roles.join(' & ') || 'Aucun Role')}</span><button class="btn small" id="logout">Déconnexion</button><span class="mail">${esc(s.name)}</span>`
     : `<a class="btn primary small" href="login.html">Connexion</a>`;
   const lo = $('#logout'); if (lo) lo.onclick = () => { store.del('token'); location.href = 'login.html'; };
 }

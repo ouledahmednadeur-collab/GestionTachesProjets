@@ -33,7 +33,7 @@ public class TachesController : ControllerBase
         var result=await _taches.GetByProjetAsync(projetId,statut,page,pageSize);
         return Ok(ToPagedDto(result));
     }
-    [HttpGet("api/membres/{membreId}/taches")]
+    [HttpGet("/api/membres/{membreId}/taches")]
     public async Task<ActionResult<PagedResult<TacheDto>>> GetByMembre(int membreId , int page=1 , int pageSize=10 )
     {
         if (await _membres.GetByIdAsync(membreId)==null) 
@@ -43,14 +43,7 @@ public class TachesController : ControllerBase
         var result = await _taches.GetByMembreAsync(membreId,page,pageSize);
         return Ok(ToPagedDto(result));
     }
-    [HttpGet("/api/projets/{projetId}/avancement")]
-    public async Task<ActionResult> GetAvancement(int projetId)
-    {
-        if (await _projets.GetByIdAsync(projetId)==null )
-        return NotFound("projet introuvable");
-        var avancement = await _taches.GetAvancementAsync(projetId);
-        return Ok(new{ProjetId=projetId,Avancement=avancement});
-    }
+    
     [HttpGet("{id}")]
     public async Task<ActionResult<TacheDto>> GetById (int id)
     {

@@ -1,10 +1,13 @@
 using System.Security.Claims;
 using System.Text;
+using GestionTachesProjets.Data;
+using GestionTachesProjets.Models;
 using GestionTachesProjets.DTOs ;
 using Microsoft.AspNetCore.Identity ;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens ;
+using Microsoft.EntityFrameworkCore;
 namespace GestionTachesProjets.Controllers ;
 [ApiController]
 [Route("api/[controller]")]
@@ -12,10 +15,12 @@ public class AuthController : ControllerBase
 {
     private readonly UserManager<IdentityUser> _userManager ;
     private readonly IConfiguration _config ;
-    public AuthController(UserManager<IdentityUser> userManager , IConfiguration config )
+    private readonly AppDbContext _context ;
+    public AuthController(UserManager<IdentityUser> userManager , IConfiguration config ,AppDbContext context)
     {
         _userManager=userManager ;
         _config=config ;
+        _context=context;
     }
 [HttpPost("register")]
 public async Task<IActionResult> Register(RegisterDto dto)
@@ -26,7 +31,7 @@ public async Task<IActionResult> Register(RegisterDto dto)
             Email = dto.Email
         };
         // houni IdentityUser lezemha tekhou deux champs UserName w Email bech nebdew fard thniya hatinehom 
-        // zouz kifkif
+        // zouz kifkif hedha melouel
         var result= await _userManager.CreateAsync(user,dto.Password);
         // CreateAsyn hiya methode taaamel 3 hajet :
         // 1 tchouf el mdp mriguell walla 
@@ -36,6 +41,20 @@ public async Task<IActionResult> Register(RegisterDto dto)
         {
             return BadRequest(result.Errors.Select(e =>e.Description));
             // nraj3ou el description mte3 el erreur 
+
+            
+        }
+        await  _userManager.AddToRoleAsync(user , "Membre");
+        if (!await _context.Membres.AnyAsync(m=>m.Email == dto.Email))
+        { _context.Membres.Add(new Membre
+                                         { 
+                                            Nom = string.IsNullOrWhiteSpace(dto.Nom)? dto.Email.Split('@')[0] : dto.Nom ,
+                                            Email = dto.Email 
+            // hedhi hiya el fonctionnalite elli zedneha ba3ad ma zedna AppDbContext bech nzidou el sayed elli 
+            // aamel inscri en tant que membre fel base 
+                                         });
+            await _context.SaveChangesAsync();
+            
         }
         return Ok(new{message="compte cree avec succes"});
     }

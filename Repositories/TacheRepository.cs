@@ -53,7 +53,7 @@ public class TacheRepository : ITacheRepository
     }
     public async Task<double> GetAvancementAsync(int projetId)
     {
-        var total= await _context.Taches.CountAsync(t=>t.ProjetId==projetId && t.Statut ==StatutTache.Terminee);
+        var total= await _context.Taches.CountAsync(t=>t.ProjetId==projetId );
         if (total ==0)
         {
             return 0 ;

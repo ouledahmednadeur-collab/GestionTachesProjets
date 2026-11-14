@@ -8,6 +8,7 @@ public class RegisterDto
     public string Email {get;set;}=string.Empty ;
     [Required(ErrorMessage ="Le mot de passe est obligatoire")]
     public string Password {get;set;}=string.Empty ;
+    public string? Nom {get;set;}
 }
 public class LoginDto
 {
@@ -20,4 +21,5 @@ public class AuthResponseDto
 {
     public string Token {get;set;}=string.Empty;
     public DateTime Expiration {get;set;}
+
 }
