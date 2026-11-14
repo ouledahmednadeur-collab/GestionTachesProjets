@@ -5,8 +5,10 @@ using GestionTachesProjets.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 namespace GestionTachesProjets.Controllers;
+using Microsoft.AspNetCore.Authorization;
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class MembresController : ControllerBase
 {
     private readonly IMembreRepository _repo ;
@@ -58,6 +60,7 @@ public async Task<IActionResult>Update(int id ,MembreCreateDto dto)
         return NoContent();
     }
 [HttpDelete("{id}")]
+[Authorize(Roles ="Admin")]
 public async Task<IActionResult> Delete (int id )
     {
         var membre = await _repo.GetByIdAsync(id);

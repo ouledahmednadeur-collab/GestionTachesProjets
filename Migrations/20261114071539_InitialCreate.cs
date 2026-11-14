@@ -192,7 +192,7 @@ namespace GestionTachesProjets.Migrations
                         .Annotation("Sqlite:Autoincrement", true),
                     Titre = table.Column<string>(type: "TEXT", maxLength: 150, nullable: false),
                     Description = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
-                    statut = table.Column<int>(type: "INTEGER", nullable: false),
+                    Statut = table.Column<int>(type: "INTEGER", nullable: false),
                     ProjetId = table.Column<int>(type: "INTEGER", nullable: false),
                     MembreId = table.Column<int>(type: "INTEGER", nullable: true)
                 },

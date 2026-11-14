@@ -35,8 +35,8 @@ public static class Dbseeder
         context.Projets.AddRange(p1,p2);
         context.Membres.AddRange(m1,m2);
         context.Taches.AddRange(
-                                new Tache { Titre ="Maquette",Projet =p1 ,Membre=m1,statut =StatutTache.Terminee},
-                                new Tache { Titre="Integration", Projet=p1 , Membre=m2 ,statut=StatutTache.EnCours},
+                                new Tache { Titre ="Maquette",Projet =p1 ,Membre=m1,Statut =StatutTache.Terminee},
+                                new Tache { Titre="Integration", Projet=p1 , Membre=m2 ,Statut=StatutTache.EnCours},
                                 new Tache {Titre= "Tests" , Projet=p1},
                                 new Tache {Titre = "Cahier des charges",Projet=p2 ,Membre=m1});
                                 await context.SaveChangesAsync();

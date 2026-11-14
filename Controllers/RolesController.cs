@@ -1,11 +1,12 @@
-using GestionTachesProjets.Dto;
+using GestionTachesProjets.DTOs;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using SQLitePCL;
+using Microsoft.AspNetCore.Authorization;
 namespace GestionTachesProjets.Controllers;
 [ApiController]
-[Route("api/controller")]
+[Route("api/[controller]")]
+[Authorize(Roles ="Admin")]
 public class RolesController : ControllerBase
 {
     private readonly RoleManager<IdentityRole> _roleManager ; 
@@ -41,7 +42,7 @@ public class RolesController : ControllerBase
         if (!result.Succeeded) return BadRequest(result.Errors.Select(e => e.Description));
         return Ok(new { message ="Role attribue"});
     }
-    [HttpPost("retirer")]
+    [HttpDelete("retirer")]
     public async Task<IActionResult> Retirer(UserRoleDto dto)
     {
         var user = await _userManager.FindByEmailAsync(dto.Email);

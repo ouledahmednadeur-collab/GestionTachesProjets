@@ -5,10 +5,12 @@ using GestionTachesProjets.Models;
 using GestionTachesProjets.Repositories;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using SQLitePCL;
 namespace GestionTachesProjets.Controllers;
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class TachesController : ControllerBase
 {
     private readonly ITacheRepository _taches;
@@ -86,11 +88,12 @@ public class TachesController : ControllerBase
         {
         var tache = await _taches.GetByIdAsync(id);
         if (tache == null) return NotFound();
-        tache.statut=dto.Statut ;
+        tache.Statut=dto.Statut ;
         await _taches.UpdateAsync(tache);
         return Ok(ToDto(tache));
         }
     [HttpDelete("{id}")]
+    [Authorize(Roles ="Admin")]
     public async Task<IActionResult> Delete(int id)
     {
         var tache = await _taches.GetByIdAsync (id);
@@ -110,7 +113,7 @@ public class TachesController : ControllerBase
         Id=t.Id ,
         Titre=t.Titre ,
         Description = t.Description ,
-        Statut = t.statut ,
+        Statut = t.Statut ,
         ProjetId = t.ProjetId,
         MembreId = t.MembreId
     };

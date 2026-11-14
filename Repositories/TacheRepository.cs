@@ -18,7 +18,7 @@ public class TacheRepository : ITacheRepository
         var query = _context.Taches.Where(t =>t.ProjetId == projetId);
         if (statut.HasValue)
         {
-            query = query.Where(t=>t.statut ==statut.Value );
+            query = query.Where(t=>t.Statut ==statut.Value );
         }
         return await PaginerAsync(query,page,pageSize);
         // pagination fi methode okhra mouc houni 
@@ -53,12 +53,12 @@ public class TacheRepository : ITacheRepository
     }
     public async Task<double> GetAvancementAsync(int projetId)
     {
-        var total= await _context.Taches.CountAsync(t=>t.ProjetId==projetId && t.statut ==StatutTache.Terminee);
+        var total= await _context.Taches.CountAsync(t=>t.ProjetId==projetId && t.Statut ==StatutTache.Terminee);
         if (total ==0)
         {
             return 0 ;
         }
-        var terminee = await _context.Taches.CountAsync(t=> t.ProjetId == projetId && t.statut == StatutTache.Terminee);
+        var terminee = await _context.Taches.CountAsync(t=> t.ProjetId == projetId && t.Statut == StatutTache.Terminee);
         return Math.Round(terminee * 100.0 / total,1);
         // houni bech tehseb les taches f projet  statut mte3hom terminee donc jointure mabin 
         // projet w tache w countAsync() 

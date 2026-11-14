@@ -8,7 +8,7 @@ public class Tache
     public string Titre {get;set;}=string.Empty;
     [MaxLength(500)]
     public string? Description {get;set;}
-    public StatutTache statut {get;set;}= StatutTache.AFaire;
+    public StatutTache Statut {get;set;}= StatutTache.AFaire;
     public int ProjetId {get;set;}
     public Projet? Projet {get;set;}
     public int? MembreId {get;set;}

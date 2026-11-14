@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GestionTachesProjets.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261114042805_InitialCreate")]
+    [Migration("20261114071539_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -105,13 +105,13 @@ namespace GestionTachesProjets.Migrations
                     b.Property<int>("ProjetId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("Statut")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Titre")
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("TEXT");
-
-                    b.Property<int>("statut")
-                        .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 

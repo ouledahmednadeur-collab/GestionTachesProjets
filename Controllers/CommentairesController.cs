@@ -2,9 +2,11 @@ using GestionTachesProjets.DTOs;
 using GestionTachesProjets.Models;
 using GestionTachesProjets.Repositories;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 namespace GestionTachesProjets.Controllers ;
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class CommentairesController : ControllerBase
 {
     private readonly ICommentaireRepository _commentaires ;
@@ -16,7 +18,7 @@ public class CommentairesController : ControllerBase
         _taches=taches ;
         _membres=membres ;
     }
-    [HttpGet("/api/taches/{tacheId}/commentaires")]
+[HttpGet("/api/taches/{tacheId}/commentaires")]
     public async Task<ActionResult<PagedResult<CommentaireDto>>> GetByTache( int tacheId , int page=1 ,int pageSize=10)
     {
         if(await _taches.GetByIdAsync(tacheId) ==null) 
@@ -32,14 +34,14 @@ public class CommentairesController : ControllerBase
             Items=result.Items.Select(ToDto).ToList()
         });
     }
-    [HttpGet("{id}")]
+[HttpGet("{id}")]
     public async Task<ActionResult<CommentaireDto>> GetById(int id)
     {
         var commentaire = await _commentaires.GetByIdAsync(id);
         if (commentaire == null) return NotFound();
         return Ok(ToDto(commentaire));
     }
-    [HttpPost("/api/taches/{tacheId}/commentaires")]
+[HttpPost("/api/taches/{tacheId}/commentaires")]
 public async Task<ActionResult<CommentaireDto>> Create(int tacheId, CommentaireCreateDto dto)
     { if (await _taches.GetByIdAsync(tacheId) == null) return NotFound("Tache introuvable");
       if (await  _membres.GetByIdAsync(dto.MembreId)==null) return NotFound("Membre introuvable");
@@ -52,7 +54,8 @@ public async Task<ActionResult<CommentaireDto>> Create(int tacheId, CommentaireC
       await _commentaires.AddAsync(commentaire);
       return CreatedAtAction(nameof(GetById),new{id=commentaire.Id},ToDto(commentaire));
     }
-    [HttpDelete("{id}")]
+[HttpDelete("{id}")]
+[Authorize(Roles ="Admin")]
     public async Task<IActionResult> Delete(int id)
     {
         var commentaire= await _commentaires.GetByIdAsync(id);

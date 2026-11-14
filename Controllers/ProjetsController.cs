@@ -2,12 +2,13 @@ using System.ComponentModel;
 using GestionTachesProjets.DTOs;
 using GestionTachesProjets.Models;
 using GestionTachesProjets.Repositories;
-using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace GestionTachesProjets.Controllers ;
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Roles ="Admin")]
 public class ProjetsController :ControllerBase
 {
     private readonly IProjetRepository _repo;

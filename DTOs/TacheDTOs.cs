@@ -15,7 +15,7 @@ public class TacheCreateDto
 public class AffecterTacheDto
 {
     [Range(1, int.MaxValue,ErrorMessage="MembreId Invalide ")]
-    public int ProjetId{get;set;}
+
     public int MembreId{get;set;}
 }
 public class ChangerStatutDto

@@ -102,13 +102,13 @@ namespace GestionTachesProjets.Migrations
                     b.Property<int>("ProjetId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("Statut")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Titre")
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("TEXT");
-
-                    b.Property<int>("statut")
-                        .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 

@@ -1,15 +1,17 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using GestionTachesProjets.Data ;
 using Microsoft.EntityFrameworkCore;
 using GestionTachesProjets.Repositories;
 using Microsoft.AspNetCore.Identity ;
+using Microsoft.OpenApi;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(o=> o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddDbContext<AppDbContext>(options=>options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddIdentityCore<IdentityUser>().AddRoles<IdentityRole>().AddEntityFrameworkStores<AppDbContext>();
@@ -20,7 +22,19 @@ builder.Services.AddScoped<ICommentaireRepository ,CommentaireRepository>();
 // hedhi seeee7bi el Injection De Dependance , wa9telli classe men les classe 
 // test7a9 IProjetRepository fel constructeur mte3ha , houni na3tiwha ProjetRepository
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.Http,
+        Scheme ="bearer",
+        BearerFormat="JWT",
+        Description="Collez le token obtenu avec /api/Auth/login"
+    });
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement{
+        [new OpenApiSecuritySchemeReference("Bearer",document)]=[]
+         });
+         });
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 .AddJwtBearer(options=>
 {

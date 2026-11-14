@@ -1,5 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-namespace GestionTachesProjets.Dto;
+namespace GestionTachesProjets.DTOs;
 public class RoleCreateDto 
 {
     [Required(ErrorMessage = "Le nom du role est obligatoire")]
