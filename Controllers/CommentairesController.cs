@@ -3,6 +3,9 @@ using GestionTachesProjets.Models;
 using GestionTachesProjets.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
+using GestionTachesProjets.Data;
 namespace GestionTachesProjets.Controllers ;
 [ApiController]
 [Route("api/[controller]")]
@@ -12,11 +15,13 @@ public class CommentairesController : ControllerBase
     private readonly ICommentaireRepository _commentaires ;
     private readonly ITacheRepository _taches ;
     private readonly IMembreRepository _membres ;
-    public CommentairesController( ICommentaireRepository commentaires , ITacheRepository taches , IMembreRepository membres)
+    private readonly AppDbContext _context ;
+    public CommentairesController( ICommentaireRepository commentaires , ITacheRepository taches , IMembreRepository membres , AppDbContext context)
     {
         _commentaires=commentaires ;
         _taches=taches ;
         _membres=membres ;
+        _context=context ;
     }
 [HttpGet("/api/taches/{tacheId}/commentaires")]
     public async Task<ActionResult<PagedResult<CommentaireDto>>> GetByTache( int tacheId , int page=1 ,int pageSize=10)
@@ -55,11 +60,17 @@ public async Task<ActionResult<CommentaireDto>> Create(int tacheId, CommentaireC
       return CreatedAtAction(nameof(GetById),new{id=commentaire.Id},ToDto(commentaire));
     }
 [HttpDelete("{id}")]
-[Authorize(Roles ="Admin")]
     public async Task<IActionResult> Delete(int id)
     {
         var commentaire= await _commentaires.GetByIdAsync(id);
         if (commentaire == null) return NotFound();
+        if (!User.IsInRole("Admin"))
+        {
+            var email=User.FindFirstValue(ClaimTypes.Email) ?? User.Identity?.Name;
+            var membre = await _context.Membres.FirstOrDefaultAsync(m => m.Email == email);
+            if (membre == null || commentaire.MembreId != membre.Id)
+            return Forbid();
+        }
         await _commentaires.DeleteAsync(commentaire);
         return NoContent();
     }

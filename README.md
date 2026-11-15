@@ -79,7 +79,7 @@ Relations : un projet a plusieurs tâches ; une tâche a au plus un membre et pl
 | Membres | `GET /api/Membres`, `GET /{id}`, `POST`, `PUT /{id}` | Connecté |
 | Membres | `DELETE /api/Membres/{id}` | Admin |
 | Commentaires | `GET` et `POST /api/taches/{id}/commentaires` | Connecté |
-| Commentaires | `DELETE /api/Commentaires/{id}` | Admin |
+| Commentaires | `DELETE /api/Commentaires/{id}` | Admin ou auteur du commentaire |
 | Rôles | `GET`, `POST /api/Roles`, `POST /attribuer`, `DELETE /retirer` | Admin |
 
 Codes HTTP : 200/201/204 en succès, 400 données invalides, 401 sans token valide, 403 rôle insuffisant ou ressource d'un autre utilisateur, 404 introuvable, 409 suppression impossible.

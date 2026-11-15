@@ -28,6 +28,9 @@ async function load() {
     const opts = sel => ms.map(m =>
       `<option value="${m.id}" ${m.id === sel ? 'selected' : ''}>${esc(m.nom)}</option>`).join('');
 
+    // Id du membre connecté (par son email) : un membre ne supprime que ses commentaires.
+    const moiId = ms.find(m => norm(m.email) === norm(s?.name))?.id;
+
     // Affichage : fil d'Ariane, en-tête, commentaires (à gauche), gestion (à droite).
     view(`<div class="crumb">
         <a href="index.html">Projets</a>
@@ -53,6 +56,8 @@ async function load() {
               <small>${esc(ms.find(m => m.id === c.membreId)?.nom || 'Membre ' + c.membreId)}
                 · ${new Date(c.dateCreation).toLocaleString('fr-FR')}</small>
               <div>${esc(c.contenu)}</div>
+              ${s?.admin || (moiId != null && c.membreId === moiId)
+                ? `<button class="btn danger" data-delc="${c.id}">Supprimer</button>` : ''}
             </div>`).join('') : '<p style="color:var(--muted)">Aucun commentaire.</p>'}
           <form id="fc" style="margin-top:14px">
             <label>Écrire un commentaire</label>
@@ -127,6 +132,18 @@ async function load() {
         toast(er.message, true);
       }
     };
+
+    // Suppression d'un commentaire (Admin, ou auteur du commentaire), puis rechargement.
+    document.querySelectorAll('[data-delc]').forEach(b => b.onclick = () =>
+      confirmDo('Supprimer ce commentaire ?', async () => {
+        try {
+          await api(`/api/Commentaires/${b.dataset.delc}`, 'DELETE');
+          toast('Commentaire supprimé');
+          load();
+        } catch (e) {
+          toast(e.message, true);
+        }
+      }));
 
     // Suppression (bouton visible seulement pour l'Admin), puis retour au projet.
     const dt = $('#delT');
