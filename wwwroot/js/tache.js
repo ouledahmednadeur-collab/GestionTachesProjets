@@ -74,10 +74,12 @@ async function load() {
               `<option value="${k}" ${k === t.statut ? 'selected' : ''}>${l}</option>`).join('')}
           </select>
           <label>Assignée à</label>
-          <select id="afSel">
+          ${s?.admin ? `<select id="afSel">
             <option value="">— Choisir —</option>
             ${opts(t.membreId)}
-          </select>
+          </select>` : (a => a
+            ? `<p><b>${esc(a.nom)}</b>${norm(a.email) === norm(s?.name) ? ' <span class="badge vous">Vous</span>' : ''}</p>`
+            : '<p style="color:var(--muted)">Non assignée</p>')(ms.find(m => m.id === t.membreId))}
           <button class="btn primary" id="save"
             style="margin-top:16px;width:100%">Enregistrer</button>
         </div>
@@ -99,8 +101,8 @@ async function load() {
 
         // Affectation seulement si un membre est choisi :
         // PUT /api/Taches/{id}/affecter avec { membreId }.
-        const m = $('#afSel').value;
-        if (m) await api(`/api/Taches/${id}/affecter`, 'PUT', { membreId: +m });
+        const m = $('#afSel')?.value;
+        if (m && session().admin) await api(`/api/Taches/${id}/affecter`, 'PUT', { membreId: +m });
 
         // 4. Succès : message, puis load() recharge la tâche et redessine la page.
         //    L'avancement du projet n'est pas stocké : le serveur le recalcule à partir
