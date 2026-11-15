@@ -5,7 +5,7 @@ async function load(){
   view(`<div class="crumb"><a href="index.html">Projets</a></div>${skeleton(2)}`);
   try {
     const [t, membres, coms] = await Promise.all([
-      api(`/api/Taches/${id}`), api('/api/Membres').catch(() => []), api(`/api/taches/${id}/commentaires`).catch(() => [])]);
+      api(`/api/Taches/${id}`), api('/api/Membres?page=1&pageSize=50').catch(() => []), api(`/api/taches/${id}/commentaires`).catch(() => [])]);
     const ms = list(membres), cs = list(coms), s = session();
     const opts = sel => ms.map(m => `<option value="${m.id}" ${m.id === sel ? 'selected' : ''}>${esc(m.nom)}</option>`).join('');
     view(`<div class="crumb"><a href="index.html">Projets</a> › <a href="projet.html?id=${t.projetId}">Projet ${t.projetId}</a> › ${esc(t.titre)}</div>

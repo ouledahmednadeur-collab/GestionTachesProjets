@@ -8,7 +8,7 @@ async function load(){
   view(`<div class="crumb"><a href="index.html">Projets</a> › Projet ${id}</div>${skeleton(3)}`);
   try {
     const [p, av, membres] = await Promise.all([
-      api(`/api/Projets/${id}`), api(`/api/projets/${id}/avancement`).catch(() => 0), api('/api/Membres').catch(() => [])]);
+      api(`/api/Projets/${id}`), api(`/api/projets/${id}/avancement`).catch(() => 0), api('/api/Membres?page=1&pageSize=50').catch(() => [])]);
     const v = pct(av);
     const t = await api(`/api/projets/${id}/taches?page=${page}&pageSize=${SIZE}` + (statut ? `&statut=${statut}` : ''));
     const items = list(t), tot = total(t), pages = Math.max(1, Math.ceil(tot / SIZE));

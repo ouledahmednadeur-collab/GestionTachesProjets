@@ -4,8 +4,7 @@ view(`<div class="crumb"><a href="membres.html">Membres</a></div>${skeleton(3)}`
 
 (async () => {
   try {
-    const ms = list(await api('/api/Membres'));
-    const m = ms.find(x => x.id === id);
+    const m = await api(`/api/Membres/${id}`).catch(() => null);   // un seul membre, par son id
     if (!m) throw new Error('Membre introuvable');
 
     let items = [];

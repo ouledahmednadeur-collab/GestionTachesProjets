@@ -155,3 +155,38 @@ footer{color:var(--muted);text-align:center;font-size:13px;padding:40px 0}
 @media(max-width:600px){.searches{grid-template-columns:1fr;gap:0}}
 @media(max-width:900px){.duo{grid-template-columns:1fr;gap:0}.vsep{height:1px;margin:20px 0 0}}
 [hidden]{display:none !important}
+
+/* ===== page de connexion ===== */
+/* écran d'entrée */
+.loader{position:fixed;inset:0;z-index:100;display:grid;place-items:center;background:var(--bg);transition:opacity .3s;animation:loaderSecours 0s 2s forwards}
+.loader.out{opacity:0}
+.loader .box{display:flex;flex-direction:column;align-items:center;gap:12px;font-weight:700;font-size:18px}
+.loader .logo{width:56px;height:56px;border-radius:16px;font-size:28px}
+.loader .spin{display:inline-block;font-size:30px;line-height:1;color:var(--muted);animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes loaderSecours{to{opacity:0;visibility:hidden}}
+/* fond d'engrenages */
+.gears{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;opacity:.45}
+/* carte */
+.auth-card{background:color-mix(in srgb,var(--surface) 82%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-radius:18px}
+.auth-card.appear{animation:cardIn .5s ease both}
+html.with-loader .auth-card.appear{animation-delay:.9s}
+@keyframes cardIn{from{opacity:0;transform:translateY(16px)}}
+.auth-head{text-align:center;margin-bottom:18px}
+.auth-head .logo{width:48px;height:48px;border-radius:14px;font-size:24px;margin:0 auto 10px}
+.auth-head h1{margin:0 0 4px;font-size:24px;letter-spacing:-.02em}
+.auth-head p{margin:0;color:var(--muted);font-size:14px}
+.field{position:relative}
+.field>span{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;opacity:.7;pointer-events:none}
+.field input{padding-left:38px}
+.ferr{color:var(--bad);font-size:13px;margin:12px 0 0}
+.ferr:empty{display:none}
+.switch{text-align:center;font-size:14px;color:var(--muted);margin:14px 0 0}
+.linkbtn{border:0;background:none;padding:0;color:var(--accent);font-weight:600;cursor:pointer}
+.linkbtn:hover{text-decoration:underline}
+/* deux zones : animation à gauche (58 %), carte à droite (42 %) — mêmes seuils que gears.js */
+.auth-main{max-width:none;display:grid;grid-template-columns:58% 42%;align-items:center;min-height:calc(100vh - 60px)}
+.auth-main .auth-card{grid-column:2;justify-self:end;width:100%;margin:32px clamp(16px,6vw,96px) 32px 0}
+@media(max-width:899px){.auth-main{grid-template-columns:45% 55%}}
+@media(max-width:639px){.auth-main{display:block;min-height:0;padding:140px 16px 0}.auth-main .auth-card{max-width:none;margin:16px 0}}
+@media(prefers-reduced-motion:reduce){.loader{display:none}.auth-card.appear{animation:none}}
