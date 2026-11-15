@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using GestionTachesProjets.Data;
+using Microsoft.AspNetCore.Identity;
 namespace GestionTachesProjets.Controllers;
 [ApiController]
 [Route("api/[controller]")]
@@ -16,12 +17,14 @@ public class TachesController : ControllerBase
     private readonly IProjetRepository _projets;
     private readonly IMembreRepository _membres;
     private readonly AppDbContext _context ;
-    public  TachesController(ITacheRepository taches , IProjetRepository projets , IMembreRepository membres , AppDbContext context)
+    private readonly UserManager<IdentityUser> _userManager ;
+    public  TachesController(ITacheRepository taches , IProjetRepository projets , IMembreRepository membres , AppDbContext context , UserManager<IdentityUser> userManager)
     {
         _taches=taches;
         _membres=membres;
         _projets=projets;
         _context=context;
+        _userManager=userManager;
     }
 [HttpGet("/api/projets/{projetId}/taches")]
     public async Task<ActionResult<PagedResult<TacheDto>>> GetByProjet(
@@ -57,7 +60,22 @@ public class TachesController : ControllerBase
     {
         var tache = await _taches.GetByIdAsync(id);
         if (tache==null) return NotFound();
-        return Ok(ToDto(tache));
+        var dto = ToDto(tache);
+        // membre affecté : son nom, et son rôle lu dans son compte Identity (relié par l'email)
+        if (tache.MembreId != null)
+        {
+            var membre = await _membres.GetByIdAsync(tache.MembreId.Value);
+            if (membre != null)
+            {
+                dto.MembreNom = membre.Nom;
+                var user = await _userManager.FindByEmailAsync(membre.Email);
+                var roles = user == null ? new List<string>() : await _userManager.GetRolesAsync(user);
+                // Admin d'abord, sinon le rôle métier, sinon « Membre »
+                dto.MembreRole = roles.Contains("Admin") ? "Admin"
+                               : roles.FirstOrDefault(r => r != "Membre") ?? "Membre";
+            }
+        }
+        return Ok(dto);
     }
 [HttpPost]
     public async Task<ActionResult<TacheDto>> Create(TacheCreateDto dto)
@@ -85,6 +103,7 @@ public class TachesController : ControllerBase
         await _taches.UpdateAsync(tache);
         return Ok(ToDto(tache));
     }
+    //-------------------------------------------------------------------------------------------
 [HttpPut("{id}/statut")]
     public async Task<ActionResult<TacheDto>> ChangerStatut(int id ,ChangerStatutDto dto)
         {
@@ -102,6 +121,7 @@ public class TachesController : ControllerBase
         await _taches.UpdateAsync(tache);
         return Ok(ToDto(tache));
         }
+        //-------------------------------------------------------------------------------------------
 [HttpDelete("{id}")]
 [Authorize(Roles ="Admin")]
     public async Task<IActionResult> Delete(int id)

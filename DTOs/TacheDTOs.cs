@@ -18,11 +18,14 @@ public class AffecterTacheDto
 
     public int MembreId{get;set;}
 }
+//---------------------------------------------------------------------------- allez
 public class ChangerStatutDto
 {
     [EnumDataType(typeof(StatutTache),ErrorMessage ="Statut invalide")]
     public StatutTache Statut {get;set;}
 }
+//----------------------------------------------------------------------------allez
+//----------------------------------------------------------------------------retour
 public class TacheDto
 {
     public int Id {get;set;}
@@ -31,4 +34,9 @@ public class TacheDto
     public StatutTache Statut {get;set;} 
     public int ProjetId {get;set;}
     public int? MembreId {get;set;}
+    // remplis seulement par GET /api/Taches/{id} (page détail) : nom affiché et rôle du membre
+    // (« Admin », son rôle métier, ou « Membre ») ; ni email ni identifiant de compte
+    public string? MembreNom {get;set;}
+    public string? MembreRole {get;set;}
 }
+//-------------------------------------------------------------------------------retour
