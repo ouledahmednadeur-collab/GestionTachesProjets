@@ -93,7 +93,7 @@ public class TachesController : ControllerBase
         return NotFound();
         if (!User.IsInRole("Admin"))
         {
-            var email=User.FindFirstValue(ClaimTypes.Email ?? User.Identity?.Name);
+            var email=User.FindFirstValue(ClaimTypes.Email )?? User.Identity?.Name;
             var membre = await _context.Membres.FirstOrDefaultAsync(m => m.Email == email);
             if (membre == null || tache.MembreId !=membre.Id)
             return Forbid();
