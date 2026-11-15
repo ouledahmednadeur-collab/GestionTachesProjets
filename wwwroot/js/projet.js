@@ -1,19 +1,39 @@
-/* Page d'un projet : infos, avancement, tâches filtrées et paginées */
-const id = +param('id');
-let statut = param('statut') || '';
-let page = +param('page') || 1;
-const SIZE = 6;
+/* =====================================================================
+ * projet.js : page d'un projet (projet.html?id=…)
+ * Infos du projet, barre d'avancement, tâches filtrées par statut
+ * et paginées côté serveur.
+ * ===================================================================== */
 
-async function load(){
+/* ---------- Constantes et état de la page ---------- */
+
+const id = +param('id');                 // identifiant du projet lu dans l'URL
+let statut = param('statut') || '';     // filtre de statut ('' = toutes les tâches)
+let page = +param('page') || 1;         // page courante de la liste des tâches
+const SIZE = 6;                          // nombre de tâches par page
+
+/* ---------- Chargement, affichage et événements ---------- */
+
+// Charge le projet, son avancement et la page de tâches demandée, puis dessine tout.
+// Rappelée à chaque changement de filtre ou de page et après chaque modification.
+async function load() {
   view(`<div class="crumb"><a href="index.html">Projets</a> › Projet ${id}</div>${skeleton(3)}`);
   try {
+    // Chargement des données : projet, avancement et membres en parallèle
+    // (avancement et membres facultatifs : valeur par défaut en cas d'erreur).
     const [p, av, membres] = await Promise.all([
-      api(`/api/Projets/${id}`), api(`/api/projets/${id}/avancement`).catch(() => 0), api('/api/Membres?page=1&pageSize=50').catch(() => [])]);
+      api(`/api/Projets/${id}`),
+      api(`/api/projets/${id}/avancement`).catch(() => 0),
+      api('/api/Membres?page=1&pageSize=50').catch(() => [])]);
     const v = pct(av);
-    const t = await api(`/api/projets/${id}/taches?page=${page}&pageSize=${SIZE}` + (statut ? `&statut=${statut}` : ''));
+
+    // Tâches de la page courante, filtrées par statut si un filtre est choisi.
+    const t = await api(`/api/projets/${id}/taches?page=${page}&pageSize=${SIZE}`
+      + (statut ? `&statut=${statut}` : ''));
     const items = list(t), tot = total(t), pages = Math.max(1, Math.ceil(tot / SIZE));
     const nomMembre = x => esc(list(membres).find(m => m.id === x)?.nom || 'Membre ' + x);
     const s = session();
+
+    // Affichage : en-tête avec avancement, filtres, cartes des tâches, pagination.
     view(`<div class="crumb"><a href="index.html">Projets</a> › ${esc(p.nom)}</div>
       <div class="detail-head">${icon(p.nom, true)}<div style="flex:1;min-width:220px"><h1>${esc(p.nom)}</h1><p>${esc(p.description || 'Aucune description')}</p>
         <div style="max-width:380px;margin-top:14px"><div class="bar ${v >= 100 ? 'done' : ''}"><i style="width:${v}%"></i></div>
@@ -32,17 +52,47 @@ async function load(){
       ${pages > 1 ? `<div class="pager"><button class="btn" id="prev" ${page <= 1 ? 'disabled' : ''}>← Précédent</button>
         <span>Page ${page} / ${pages}</span><button class="btn" id="next" ${page >= pages ? 'disabled' : ''}>Suivant →</button></div>` : ''}`);
 
-    document.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { statut = b.dataset.s; page = 1; load(); });
+    /* ----- Événements ----- */
+
+    // Filtres de statut : on revient à la page 1 et on recharge.
+    document.querySelectorAll('[data-s]').forEach(b => b.onclick = () => {
+      statut = b.dataset.s;
+      page = 1;
+      load();
+    });
+
+    // Pagination : boutons présents seulement s'il y a plusieurs pages.
     const pv = $('#prev'), nx = $('#next');
     if (pv) pv.onclick = () => { page--; load(); };
     if (nx) nx.onclick = () => { page++; load(); };
+
+    // Nouvelle tâche dans ce projet (le projetId est ajouté aux champs du formulaire).
     $('#newT').onclick = () => modal('Nouvelle tâche', [
-      { name: 'titre', label: 'Titre', required: true }, { name: 'description', label: 'Description', type: 'textarea' }],
-      async d => { await api('/api/Taches', 'POST', {...d, projetId : id}); toast('Tache cree'); load(); });
+      { name: 'titre', label: 'Titre', required: true },
+      { name: 'description', label: 'Description', type: 'textarea' }],
+      async d => {
+        await api('/api/Taches', 'POST', { ...d, projetId: id });
+        toast('Tache cree');
+        load();
+      });
+
+    // Suppression du projet (Admin), puis retour à l'accueil.
     const dp = $('#delP');
     if (dp) dp.onclick = () => confirmDo('Supprimer ce projet et ses tâches ?', async () => {
-      try { await api(`/api/Projets/${id}`, 'DELETE'); toast('Projet supprimé'); location.href = 'index.html'; }
-      catch (e) { toast(e.message, true); } });
-  } catch (e) { view(`<div class="crumb"><a href="index.html">Projets</a></div>${emptyBox('⚠️', esc(e.message))}`); }
+      try {
+        await api(`/api/Projets/${id}`, 'DELETE');
+        toast('Projet supprimé');
+        location.href = 'index.html';
+      } catch (e) {
+        toast(e.message, true);
+      }
+    });
+  } catch (e) {
+    // Projet introuvable ou accès refusé.
+    view(`<div class="crumb"><a href="index.html">Projets</a></div>${emptyBox('⚠️', esc(e.message))}`);
+  }
 }
+
+/* ---------- Initialisation ---------- */
+
 load();
