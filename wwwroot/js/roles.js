@@ -14,15 +14,38 @@ async function load() {
   // Structure fixe : blocs des rôles à gauche, formulaires à droite.
   view(`<div class="sec"><h2>Gestion des rôles</h2></div>
     <div class="two">
-      <section class="col"><div class="searches">${bar('qR', 'Rechercher un rôle…')}${bar('qU', 'Rechercher un membre…')}</div>
-        <div id="out">${skeleton(2)}</div></section>
+      <section class="col">
+        <div class="searches">
+          ${bar('qR', 'Rechercher un rôle…')}
+          ${bar('qU', 'Rechercher un membre…')}
+        </div>
+        <div id="out">${skeleton(2)}</div>
+      </section>
+
       <div>
-        <div class="panel"><h3 style="margin-top:0">Attribuer / retirer</h3><form id="fa">
-          <label>Email de l'utilisateur</label><input name="email" type="email" required>
-          <label>Rôle</label><select name="role" id="selR"></select>
-          <div class="row" style="margin-top:16px"><button class="btn primary">Attribuer</button><button type="button" class="btn danger" id="retirer">Retirer</button></div></form></div>
-        <div class="panel" style="margin-top:16px"><form id="fr"><label style="margin-top:0">Créer un rôle</label>
-          <div class="row"><input name="nom" placeholder="Nom du rôle" required style="flex:1"><button class="btn primary">Créer</button></div></form></div>
+        <div class="panel">
+          <h3 style="margin-top:0">Attribuer / retirer</h3>
+          <form id="fa">
+            <label>Email de l'utilisateur</label>
+            <input name="email" type="email" required>
+            <label>Rôle</label>
+            <select name="role" id="selR"></select>
+            <div class="row" style="margin-top:16px">
+              <button class="btn primary">Attribuer</button>
+              <button type="button" class="btn danger" id="retirer">Retirer</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="panel" style="margin-top:16px">
+          <form id="fr">
+            <label style="margin-top:0">Créer un rôle</label>
+            <div class="row">
+              <input name="nom" placeholder="Nom du rôle" required style="flex:1">
+              <button class="btn primary">Créer</button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>`);
 
@@ -34,9 +57,14 @@ async function load() {
   /* ----- Rendu ----- */
 
   // Ligne d'un utilisateur dans le bloc du rôle r, avec son bouton « Retirer ».
-  const ligne = (u, r) => `<div class="line">${icon(noms[u.email] || u.email)}
-      <div class="txt"><b>${esc(noms[u.email] || u.email)}</b>${noms[u.email] ? `<div class="sub">${esc(u.email)}</div>` : ''}</div>
-      <button class="btn small danger" data-email="${esc(u.email)}" data-role="${esc(r)}">Retirer</button>
+  const ligne = (u, r) => `<div class="line">
+      ${icon(noms[u.email] || u.email)}
+      <div class="txt">
+        <b>${esc(noms[u.email] || u.email)}</b>
+        ${noms[u.email] ? `<div class="sub">${esc(u.email)}</div>` : ''}
+      </div>
+      <button class="btn small danger" data-email="${esc(u.email)}"
+        data-role="${esc(r)}">Retirer</button>
     </div>`;
 
   // Un bloc par rôle, filtré par la recherche de rôle et la recherche de membre.
@@ -51,11 +79,17 @@ async function load() {
     $('#out').innerHTML = !roles.length ? emptyBox('🔑', 'Aucun rôle.')
       : !blocs.length ? emptyBox('🔍', 'Aucun rôle ne correspond à votre recherche.')
       : blocs.map(b => `<div class="prow">
-          <div class="pside">${icon(b.r)}<b>${esc(b.r)}</b>
+          <div class="pside">
+            ${icon(b.r)}
+            <b>${esc(b.r)}</b>
             ${b.r === 'Admin' ? '<span class="badge admin">Accès complet</span>' : ''}
-            <span class="sub">${b.n} utilisateur${b.n > 1 ? 's' : ''}</span></div>
+            <span class="sub">${b.n} utilisateur${b.n > 1 ? 's' : ''}</span>
+          </div>
           <div class="vsep"></div>
-          <div class="pmain">${b.f.length ? carreaux(b.f, u => ligne(u, b.r)) : tile(emptyBox('👤', 'Aucun utilisateur pour ce rôle.'))}</div>
+          <div class="pmain">
+            ${b.f.length ? carreaux(b.f, u => ligne(u, b.r))
+              : tile(emptyBox('👤', 'Aucun utilisateur pour ce rôle.'))}
+          </div>
         </div>`).join('');
   };
 
