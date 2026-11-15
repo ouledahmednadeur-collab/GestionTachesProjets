@@ -43,8 +43,25 @@ protected override void OnModelCreating(ModelBuilder builder)
         .WithMany()
         .HasForeignKey(c=>c.MembreId)
         .OnDelete(DeleteBehavior.Restrict);
+
+        // messages privés : expéditeur et destinataire sont des membres ; on ne peut pas
+        // supprimer un membre qui a des messages (Restrict, comme les autres relations)
+        builder.Entity<Message>()
+        .HasOne(m=>m.Expediteur)
+        .WithMany()
+        .HasForeignKey(m=>m.ExpediteurId)
+        .OnDelete(DeleteBehavior.Restrict);
+        builder.Entity<Message>()
+        .HasOne(m=>m.Destinataire)
+        .WithMany()
+        .HasForeignKey(m=>m.DestinataireId)
+        .OnDelete(DeleteBehavior.Restrict);
+        // index pour lire vite une conversation dans l'ordre des dates
+        builder.Entity<Message>()
+        .HasIndex(m=>new { m.ExpediteurId, m.DestinataireId, m.DateEnvoi });
     }
 public DbSet<Commentaire> Commentaires=> Set<Commentaire>();
+public DbSet<Message> Messages => Set<Message>();
 }
 
 

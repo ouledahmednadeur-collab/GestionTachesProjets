@@ -40,6 +40,7 @@ dotnet run
 | Swagger | http://localhost:5066/swagger |
 
 La base SQLite (`projettaches.db`) est créée, migrée et remplie automatiquement au démarrage. Pour repartir de zéro : arrêter l'application, supprimer `projettaches.db`, relancer.
+Les migrations (`InitialCreate`, puis `AjoutMessages` pour la messagerie) sont appliquées automatiquement, sans commande à lancer.
 
 ## Comptes de démonstration
 
@@ -82,6 +83,8 @@ Relations : un projet a plusieurs tâches ; une tâche a au plus un membre et pl
 | Commentaires | `GET` et `POST /api/taches/{id}/commentaires` | Connecté |
 | Commentaires | `DELETE /api/Commentaires/{id}` | Admin ou auteur du commentaire |
 | Rôles | `GET`, `POST /api/Roles`, `POST /attribuer`, `DELETE /retirer` | Admin |
+| Messages | `GET /api/Messages/conversations`, `GET /api/Messages/conversation/{membreId}`, `GET /api/Messages/non-lus` | Membre connecté, uniquement ses propres conversations |
+| Messages | `POST /api/Messages`, `DELETE /api/Messages/{id}` | Membre connecté (expéditeur déduit du token ; suppression par l'auteur seulement) |
 
 Codes HTTP : 200/201/204 en succès, 400 données invalides, 401 sans token valide, 403 rôle insuffisant ou ressource d'un autre utilisateur, 404 introuvable, 409 suppression impossible.
 
@@ -90,6 +93,7 @@ Codes HTTP : 200/201/204 en succès, 400 données invalides, 401 sans token vali
 - Identity gère les comptes et les mots de passe hachés ; `POST /api/Auth/login` renvoie un token JWT (60 minutes) qui contient le rôle.
 - `[Authorize]` protège les contrôleurs ; `[Authorize(Roles = "Admin")]` réserve les actions sensibles à l'administrateur.
 - Un membre ne voit que ses propres tâches et ne change que le statut de ses tâches.
+- Messagerie privée : expéditeur déduit du token, lecture limitée aux deux participants, suppression limitée à l'auteur (l'Admin n'a aucun droit particulier sur les messages).
 
 ## Fonctionnalités
 

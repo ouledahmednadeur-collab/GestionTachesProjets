@@ -66,6 +66,41 @@ namespace GestionTachesProjets.Migrations
                     b.ToTable("Membres");
                 });
 
+            modelBuilder.Entity("GestionTachesProjets.Models.Message", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Contenu")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("DateEnvoi")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("DateLecture")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("DestinataireId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ExpediteurId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Lu")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DestinataireId");
+
+                    b.HasIndex("ExpediteurId", "DestinataireId", "DateEnvoi");
+
+                    b.ToTable("Messages");
+                });
+
             modelBuilder.Entity("GestionTachesProjets.Models.Projet", b =>
                 {
                     b.Property<int>("Id")
@@ -328,6 +363,25 @@ namespace GestionTachesProjets.Migrations
                     b.Navigation("Membre");
 
                     b.Navigation("Tache");
+                });
+
+            modelBuilder.Entity("GestionTachesProjets.Models.Message", b =>
+                {
+                    b.HasOne("GestionTachesProjets.Models.Membre", "Destinataire")
+                        .WithMany()
+                        .HasForeignKey("DestinataireId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GestionTachesProjets.Models.Membre", "Expediteur")
+                        .WithMany()
+                        .HasForeignKey("ExpediteurId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Destinataire");
+
+                    b.Navigation("Expediteur");
                 });
 
             modelBuilder.Entity("GestionTachesProjets.Models.Tache", b =>

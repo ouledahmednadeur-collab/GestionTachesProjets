@@ -19,6 +19,7 @@ builder.Services.AddScoped<IProjetRepository ,ProjetRepository>();
 builder.Services.AddScoped<IMembreRepository ,MembreRepository>();
 builder.Services.AddScoped<ITacheRepository ,TacheRepository>();
 builder.Services.AddScoped<ICommentaireRepository ,CommentaireRepository>();
+builder.Services.AddScoped<IMessageRepository ,MessageRepository>();
 // hedhi seeee7bi el Injection De Dependance , wa9telli classe men les classe 
 // test7a9 IProjetRepository fel constructeur mte3ha , houni na3tiwha ProjetRepository
 builder.Services.AddEndpointsApiExplorer();
@@ -35,6 +36,7 @@ builder.Services.AddSwaggerGen(options =>
         [new OpenApiSecuritySchemeReference("Bearer",document)]=[]
          });
          });
+//---------------------------------------------------------------------------------------------------
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 .AddJwtBearer(options=>
 {
@@ -50,6 +52,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
     };
 });
+//---------------------------------------------------------------------------------------------------------
 var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
