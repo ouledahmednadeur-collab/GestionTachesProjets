@@ -29,19 +29,58 @@ async function load() {
       `<option value="${m.id}" ${m.id === sel ? 'selected' : ''}>${esc(m.nom)}</option>`).join('');
 
     // Affichage : fil d'Ariane, en-tête, commentaires (à gauche), gestion (à droite).
-    view(`<div class="crumb"><a href="index.html">Projets</a> › <a href="projet.html?id=${t.projetId}">Projet ${t.projetId}</a> › ${esc(t.titre)}</div>
-      <div class="detail-head">${icon(t.titre, true)}<div style="flex:1"><h1>${esc(t.titre)}</h1><span class="st ${t.statut}">${STATUTS[t.statut] || t.statut}</span>
-        <p style="margin-top:10px">${esc(t.description || 'Pas de description')}</p></div>
-        ${s?.admin ? '<button class="btn danger" id="delT">Supprimer</button>' : ''}</div>
+    view(`<div class="crumb">
+        <a href="index.html">Projets</a>
+        › <a href="projet.html?id=${t.projetId}">Projet ${t.projetId}</a>
+        › ${esc(t.titre)}
+      </div>
+
+      <div class="detail-head">
+        ${icon(t.titre, true)}
+        <div style="flex:1">
+          <h1>${esc(t.titre)}</h1>
+          <span class="st ${t.statut}">${STATUTS[t.statut] || t.statut}</span>
+          <p style="margin-top:10px">${esc(t.description || 'Pas de description')}</p>
+        </div>
+        ${s?.admin ? '<button class="btn danger" id="delT">Supprimer</button>' : ''}
+      </div>
+
       <div class="two" style="margin-top:20px">
-        <div class="panel"><h3 style="margin-top:0">Commentaires (${cs.length})</h3>
-          ${cs.length ? cs.map(c => `<div class="com"><small>${esc(ms.find(m => m.id === c.membreId)?.nom || 'Membre ' + c.membreId)} · ${new Date(c.dateCreation).toLocaleString('fr-FR')}</small><div>${esc(c.contenu)}</div></div>`).join('') : '<p style="color:var(--muted)">Aucun commentaire.</p>'}
-          <form id="fc" style="margin-top:14px"><label>Écrire un commentaire</label><textarea name="contenu" rows="2" required></textarea>
-            <div class="row" style="margin-top:10px"><select name="membreId" style="max-width:200px" title="Auteur du commentaire">${opts(ms.find(m => m.email === s?.name)?.id)}</select><button class="btn primary">Publier</button></div></form></div>
-        <div class="panel"><h3 style="margin-top:0">Gestion</h3>
-          <label>Statut</label><select id="stSel">${Object.entries(STATUTS).map(([k, l]) => `<option value="${k}" ${k === t.statut ? 'selected' : ''}>${l}</option>`).join('')}</select>
-          <label>Assignée à</label><select id="afSel"><option value="">— Choisir —</option>${opts(t.membreId)}</select>
-          <button class="btn primary" id="save" style="margin-top:16px;width:100%">Enregistrer</button></div>
+        <div class="panel">
+          <h3 style="margin-top:0">Commentaires (${cs.length})</h3>
+          ${cs.length ? cs.map(c => `
+            <div class="com">
+              <small>${esc(ms.find(m => m.id === c.membreId)?.nom || 'Membre ' + c.membreId)}
+                · ${new Date(c.dateCreation).toLocaleString('fr-FR')}</small>
+              <div>${esc(c.contenu)}</div>
+            </div>`).join('') : '<p style="color:var(--muted)">Aucun commentaire.</p>'}
+          <form id="fc" style="margin-top:14px">
+            <label>Écrire un commentaire</label>
+            <textarea name="contenu" rows="2" required></textarea>
+            <div class="row" style="margin-top:10px">
+              <select name="membreId" style="max-width:200px" title="Auteur du commentaire">
+                ${opts(ms.find(m => m.email === s?.name)?.id)}
+              </select>
+              <button class="btn primary">Publier</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="panel">
+          <h3 style="margin-top:0">Gestion</h3>
+          <label>Statut</label>
+          <select id="stSel">
+            ${Object.entries(STATUTS).map(([k, l]) =>
+              `<option value="${k}" ${k === t.statut ? 'selected' : ''}>${l}</option>`).join('')}
+          </select>
+          <label>Assignée à</label>
+          <select id="afSel">
+            <option value="">— Choisir —</option>
+            ${opts(t.membreId)}
+          </select>
+          <button class="btn primary" id="save"
+            style="margin-top:16px;width:100%">Enregistrer</button>
+        </div>
       </div>`);
 
     /* ----- Événements ----- */
