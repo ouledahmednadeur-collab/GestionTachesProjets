@@ -1,12 +1,11 @@
-using System.ComponentModel;
-using System.Reflection.Metadata.Ecma335;
 using GestionTachesProjets.DTOs;
 using GestionTachesProjets.Models;
 using GestionTachesProjets.Repositories;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using SQLitePCL;
+using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
+using GestionTachesProjets.Data;
 namespace GestionTachesProjets.Controllers;
 [ApiController]
 [Route("api/[controller]")]
@@ -16,11 +15,13 @@ public class TachesController : ControllerBase
     private readonly ITacheRepository _taches;
     private readonly IProjetRepository _projets;
     private readonly IMembreRepository _membres;
-    public  TachesController(ITacheRepository taches , IProjetRepository projets , IMembreRepository membres)
+    private readonly AppDbContext _context ;
+    public  TachesController(ITacheRepository taches , IProjetRepository projets , IMembreRepository membres , AppDbContext context)
     {
         _taches=taches;
         _membres=membres;
         _projets=projets;
+        _context=context;
     }
     [HttpGet("/api/projets/{projetId}/taches")]
     public async Task<ActionResult<PagedResult<TacheDto>>> GetByProjet(
@@ -38,6 +39,13 @@ public class TachesController : ControllerBase
     {
         if (await _membres.GetByIdAsync(membreId)==null) 
         return NotFound("Membre introuvable");
+        if (!User.IsInRole("Admin"))
+        {
+            var email=User.FindFirstValue(ClaimTypes.Email) ?? User.Identity?.Name;
+            var membre = await _context.Membres.FirstOrDefaultAsync(m => m.Email == email);
+            if (membre == null || membre.Id !=membreId)
+            return Forbid();
+        }
         if (page<1) page=1 ;
         if(pageSize<1 || pageSize>50 ) pageSize=10 ;
         var result = await _taches.GetByMembreAsync(membreId,page,pageSize);
@@ -66,6 +74,7 @@ public class TachesController : ControllerBase
         return CreatedAtAction(nameof(GetById),new {id=tache.Id},ToDto(tache));
     }
     [HttpPut("{id}/affecter")]
+    [Authorize(Roles ="Admin")]
     public async Task<ActionResult<TacheDto>> Affecter(int id , AffecterTacheDto dto)
     {
         var tache = await _taches.GetByIdAsync(id);
@@ -80,7 +89,15 @@ public class TachesController : ControllerBase
     public async Task<ActionResult<TacheDto>> ChangerStatut(int id ,ChangerStatutDto dto)
         {
         var tache = await _taches.GetByIdAsync(id);
-        if (tache == null) return NotFound();
+        if (tache == null) 
+        return NotFound();
+        if (!User.IsInRole("Admin"))
+        {
+            var email=User.FindFirstValue(ClaimTypes.Email ?? User.Identity?.Name);
+            var membre = await _context.Membres.FirstOrDefaultAsync(m => m.Email == email);
+            if (membre == null || tache.MembreId !=membre.Id)
+            return Forbid();
+        }
         tache.Statut=dto.Statut ;
         await _taches.UpdateAsync(tache);
         return Ok(ToDto(tache));
@@ -110,4 +127,21 @@ public class TachesController : ControllerBase
         ProjetId = t.ProjetId,
         MembreId = t.MembreId
     };
+    [HttpGet("/api/projets/mes-projets")]
+    public async Task<ActionResult> MesProjets()
+    {
+        var email = User.FindFirstValue(ClaimTypes.Email) ?? User.Identity?.Name;
+        var membre = await _context.Membres.FirstOrDefaultAsync(m=> m.Email ==email );
+        if (membre == null) return Ok(new List<object>());
+        var ids = _context.Taches
+                  .Where(t=> t.MembreId == membre.Id)
+                  .Select(t=> t.ProjetId)
+                  .Distinct();
+        var projets = await _context.Projets 
+                    .Where(p=>ids.Contains(p.Id))
+                    .Select(p=> new {p.Id,p.Nom,p.Description})
+                    .ToListAsync();
+        return Ok(projets);
+
+    }
 }

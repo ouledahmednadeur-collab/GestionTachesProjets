@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace GestionTachesProjets.Controllers ;
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles ="Admin")]
+[Authorize]
 public class ProjetsController :ControllerBase
 {
     private readonly IProjetRepository _repo;
@@ -22,6 +22,7 @@ public class ProjetsController :ControllerBase
 
     }
     [HttpGet]
+    [Authorize(Roles ="Admin")]
     public async Task<ActionResult<PagedResult<ProjetDto>>> GetAll(int page=1 , int pageSize=10)
     /// question : allech houni manich keteb : [FromBoy]
     /// nahkiw aala el model binding w houa mecanisme elli yfasser kifeh ASP.NET trecuperi
@@ -80,6 +81,7 @@ public async Task<ActionResult<ProjetDto>> GetById(int id)
         return Ok(new{ProjetId=projetId,Avancement=avancement});
     }
 [HttpPost]
+[Authorize(Roles ="Admin")]
 public async Task<ActionResult<ProjetDto>> Create(ProjetCreateDto dto)
     {
         var projet = new Projet
@@ -92,6 +94,7 @@ public async Task<ActionResult<ProjetDto>> Create(ProjetCreateDto dto)
         return CreatedAtAction(nameof(GetById),new { id=projet.Id}, ToDto(projet));
     }
 [HttpPut("{id}")]
+[Authorize(Roles ="Admin")]
 public async Task<IActionResult> Update(int id, ProjetCreateDto dto )
     { var projet = await _repo.GetByIdAsync(id);
       if (projet == null) return NotFound();
@@ -101,6 +104,7 @@ public async Task<IActionResult> Update(int id, ProjetCreateDto dto )
       return NoContent();
     }
 [HttpDelete("{id}")]
+[Authorize(Roles ="Admin")]
 public async Task<IActionResult> Delete(int id)
 {
     var projet = await _repo.GetByIdAsync(id);

@@ -2,7 +2,7 @@
 view(`<section class="hero"><h1>Gérez vos projets simplement</h1>
   <p>Suivez l'avancement, répartissez les tâches et échangez avec votre équipe.</p>
   <div class="search"><span>🔍</span><input id="q" placeholder="Rechercher un projet…" autocomplete="off"></div></section>
-  <div class="sec"><h2>Tous les projets</h2><div class="actions"><button class="btn primary" id="newP">+ Nouveau projet</button></div></div>
+ <div class="sec"><h2>${session().admin ? 'Tous les projets' : 'Mes projets'}</h2><div class="actions">${session().admin ? '<button class="btn primary" id="newP">+ Nouveau projet</button>' : ''}</div></div>
   <div id="out">${skeleton(6)}</div>`);
 
 let projets = [];
@@ -23,9 +23,9 @@ function draw(){
     $(`[data-avt="${p.id}"]`).textContent = v + ' %'; } catch {} });
 }
 $('#q').oninput = draw;
-$('#newP').onclick = () => modal('Nouveau projet', [
+if ($('#newP')) $('#newP').onclick = () => modal('Nouveau projet', [
   { name: 'nom', label: 'Nom', required: true }, { name: 'description', label: 'Description', type: 'textarea' }],
   async d => { await api('/api/Projets', 'POST', d); toast('Projet créé'); location.reload(); });
 
-api('/api/Projets').then(d => { projets = list(d); draw(); })
+api(session().admin ? '/api/Projets' : '/api/projets/mes-projets').then(d => { projets = list(d); draw(); })
   .catch(e => { $('#out').innerHTML = emptyBox('⚠️', esc(e.message)); });
