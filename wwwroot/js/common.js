@@ -196,6 +196,17 @@ const list = d => Array.isArray(d) ? d : (d?.items ?? []);
 const total = d => Array.isArray(d) ? d.length
   : (d?.total ?? d?.totalCount ?? (d?.items?.length ?? 0));
 
+// Charge tous les éléments d'un endpoint paginé, page par page (50 au plus par page).
+// url = chemin sans page ni pageSize, ex. '/api/Membres' ou '/api/projets/3/taches'.
+async function toutes(url) {
+  const res = [];
+  for (let p = 1; ; p++) {
+    const d = await api(`${url}${url.includes('?') ? '&' : '?'}page=${p}&pageSize=50`);
+    res.push(...list(d));
+    if (!list(d).length || res.length >= total(d)) return res;
+  }
+}
+
 // Extrait le pourcentage d'avancement, que l'API renvoie un nombre ou un objet.
 // Dans un objet, on préfère une clé qui ressemble à « pourcentage / avancement ».
 function pct(v) {
@@ -264,7 +275,8 @@ function renderTop(active) {
     `<a href="${href}" class="${active === key ? 'on' : ''}">${txt}</a>`;
   $('#nav').innerHTML = link('projets.html', 'Projets', 'projets') +
     link('membres.html', 'Membres', 'membres') +
-    (s?.admin ? link('roles.html', 'Rôles', 'roles') : '');
+    (s?.admin ? link('roles.html', 'Rôles', 'roles')
+      + link('commentaires.html', 'Commentaires', 'commentaires') : '');
   $('#user').innerHTML = s
     ? `<span class="badge ${s.admin ? 'admin' : ''}">${esc(s.roles.join(' & ') || 'Aucun Role')}</span>
       <button class="btn small" id="logout">Déconnexion</button>
