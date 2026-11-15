@@ -20,9 +20,18 @@
   --warn: #e5a50a;
   --bad: #d64545;
   --shadow: 0 1px 2px rgba(16,24,40,.06),0 6px 18px rgba(16,24,40,.06);
+  /* fond animé (.fond-anime) : halos bleu, bleu-cyan et violet doux, grille de points */
+  --halo-1: rgba(53,132,228,.13);
+  --halo-2: rgba(80,190,230,.11);
+  --halo-3: rgba(150,120,230,.08);
+  --bg-grid: rgba(29,35,48,.05);
 }
 @media (prefers-color-scheme: dark) {
   :root {
+    --halo-1: rgba(53,132,228,.14);
+    --halo-2: rgba(80,190,230,.09);
+    --halo-3: rgba(150,120,230,.08);
+    --bg-grid: rgba(255,255,255,.04);
     --bg: #14171d;
     --surface: #1d222b;
     --surface2: #262c37;
@@ -41,6 +50,7 @@
 }
 body {
   margin: 0;
+  /* couleur de base ; halos et grille sont dans la couche .fond-anime (fin de fichier) */
   background: var(--bg);
   color: var(--text);
   font: 15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,Cantarell,sans-serif;
@@ -980,6 +990,318 @@ html.with-loader .auth-card.appear {
 }
 
 /* ==================================================================
+   Logo engrenage + membre casqué (SVG généré par gearLogo() dans common.js)
+   ================================================================== */
+.gear-logo {
+  width: 32px;
+  height: 32px;
+  flex: none;
+}
+.gl-ring {
+  fill: var(--accent);
+}
+.gl-petit {
+  fill: color-mix(in srgb,var(--accent) 45%,var(--surface));
+}
+.gl-fond {
+  fill: var(--surface);
+}
+.gl-corps {
+  fill: var(--accent);
+}
+.gl-casque {
+  fill: var(--warn);
+}
+.gl-arete {
+  stroke: var(--surface);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+/* ensemble animé de la page de connexion : entrée douce (fondu + léger zoom) */
+.gear-anim {
+  display: block;
+  width: 150px;
+  height: auto;
+  margin: 0 auto 10px;
+  overflow: visible;
+  animation: gearIn .6s ease-out both;
+}
+@keyframes gearIn {
+  from {
+    opacity: 0;
+    transform: scale(.85);
+  }
+}
+
+/* rotation : chaque engrenage tourne autour de son propre centre (origine locale),
+   durée --d proportionnelle au nombre de dents, sens opposés entre voisins */
+.gl-spin,
+.gl-boost {
+  transform-origin: 0 0;
+  animation: gearCw var(--d) linear infinite;
+}
+.gl-spin.ccw,
+.gl-boost.ccw {
+  animation-name: gearCcw;
+}
+/* couche d'accélération (+50 %) : à l'arrêt, elle tourne seulement au survol ;
+   toutes les couches s'arrêtent et repartent ensemble, l'engrènement reste juste */
+.gl-boost {
+  animation-play-state: paused;
+}
+.gear-anim:hover .gl-boost {
+  animation-play-state: running;
+}
+@keyframes gearCw {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes gearCcw {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gear-anim,
+  .gl-spin,
+  .gl-boost {
+    animation: none;
+  }
+}
+
+/* grand engrenage Admin de la page de connexion (zone de gauche, dessiné par login.js) */
+.admin-hero {
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+  animation: gearIn .6s ease-out both;
+}
+.admin-hero b {
+  font-size: 22px;
+  margin-top: 10px;
+}
+.admin-hero span {
+  color: var(--muted);
+  font-size: 14px;
+}
+.admin-gear {
+  width: min(380px,36vw);
+  height: auto;
+  overflow: visible;
+}
+.admin-gear:hover .gl-boost {
+  animation-play-state: running;
+}
+.gl-cheveux {
+  fill: color-mix(in srgb,var(--accent) 55%,#000);
+}
+.gl-ecusson {
+  fill: var(--warn);
+  stroke: var(--surface);
+  stroke-width: 3;
+}
+@media (max-width: 639px) {
+  .auth-main {
+    padding-top: 24px;
+  }
+  .admin-gear {
+    width: 150px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-hero {
+    animation: none;
+  }
+}
+
+/* liste déroulante filtrable (champ « Membre » de la page Rôles) :
+   positionnée sous le champ, sans décaler le reste du panneau */
+.combo {
+  position: relative;
+}
+.combo-list {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 30;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  max-height: 222px;
+  overflow-y: auto;
+}
+.combo-list li {
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.combo-list li:hover,
+.combo-list li.on {
+  background: var(--surface2);
+}
+.combo-list li.vide {
+  color: var(--muted);
+  cursor: default;
+}
+.combo-list li.vide:hover {
+  background: none;
+}
+
+/* ==================================================================
+   Sections « bloc descriptif à gauche + liste à droite » (pages Rôles et Membres)
+   .side-row = la section (avec .prow), .side-block = le bloc de gauche (avec .pside)
+   ================================================================== */
+/* liste courte : bloc centré verticalement face à sa liste */
+.side-row .side-block {
+  align-self: center;
+}
+/* liste plus haute que l'écran (classe .is-long posée par ajusterSections() dans common.js) :
+   bloc en haut de sa section, puis collé sous la barre du haut pendant le défilement ;
+   sticky dans une grille = il ne sort jamais de sa propre section */
+.side-row.is-long .side-block {
+  align-self: start;
+  position: sticky;
+  top: 76px;       /* barre du haut (60 px) + marge */
+}
+/* pas d'espace en trop sous la dernière section */
+.side-row:last-child {
+  padding-bottom: 0;
+}
+/* écran étroit : bloc au-dessus de la liste, centré, sans sticky */
+@media (max-width: 800px) {
+  .side-row .side-block,
+  .side-row.is-long .side-block {
+    position: static;
+    align-items: center;
+    text-align: center;
+  }
+  /* ni trait entre le bloc et sa liste, ni espace pour une liste vide */
+  .side-row .vsep,
+  .side-row .pmain:empty {
+    display: none;
+  }
+}
+
+/* ==================================================================
+   Pied de page commun (rempli par renderFooter() dans common.js)
+   ================================================================== */
+/* page en colonne : le pied reste en bas quand le contenu est court */
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+/* en colonne flex, les marges auto rétréciraient le contenu : on garde toute la largeur */
+body > main {
+  width: 100%;
+}
+footer.foot {
+  margin-top: auto;
+  padding: 32px 0 20px;
+  text-align: left;
+}
+/* trait fin en haut, exactement de la largeur du contenu */
+.foot-row {
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+}
+.foot-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--text);
+}
+.foot-brand .gear-logo {
+  width: 20px;
+  height: 20px;
+}
+.foot-tech {
+  text-align: right;
+}
+.foot-copy {
+  margin-top: 10px;
+  text-align: center;
+  font-size: 12px;
+}
+/* mobile : les trois zones l'une sous l'autre, centrées */
+@media (max-width: 700px) {
+  .foot-row {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+    gap: 6px;
+  }
+  .foot-tech {
+    text-align: center;
+  }
+}
+/* connexion : la zone principale prend la place disponible, le pied reste discret en bas */
+body[data-page="login"] .auth-main {
+  min-height: 0;
+  flex: 1;
+}
+body[data-page="login"] footer.foot {
+  padding-top: 8px;
+  opacity: .8;
+}
+
+/* ==================================================================
+   Page Tâche : titulaire + petit engrenage dont la vitesse suit le statut
+   ================================================================== */
+.titulaire {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 10px;
+  vertical-align: middle;
+  color: var(--muted);
+  font-size: 14px;
+}
+.titulaire b {
+  color: var(--text);
+}
+.gear-mini {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  fill: var(--accent);
+}
+.gear--afaire {
+  animation: gearCw 12s linear infinite;
+}
+.gear--encours {
+  animation: gearCw 2.5s linear infinite;
+}
+.gear--terminee {
+  fill: color-mix(in srgb,var(--ok) 75%,var(--surface));
+}
+@media (prefers-reduced-motion: reduce) {
+  .gear-mini {
+    animation: none;
+  }
+}
+
+/* ==================================================================
    Page Tâches : membre affecté sur une carte (pastille à initiale + nom)
    ================================================================== */
 .tache-membre {
@@ -998,4 +1320,504 @@ html.with-loader .auth-card.appear {
   color: #fff;
   font-size: 11px;
   font-weight: 700;
+}
+
+/* ==================================================================
+   Membre avec avatar (renderMembre() dans common.js) : même .icon, en petit
+   ================================================================== */
+.membre {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  margin: 4px 0 6px;
+}
+.membre .icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  font-size: 14px;
+}
+.membre b {
+  overflow-wrap: anywhere;
+}
+.membre .sub {
+  color: var(--muted);
+}
+.membre .badge {
+  display: inline-block;
+  margin-top: 3px;
+}
+/* nom / avatar cliquable vers le profil d'un membre (memberLink() dans common.js) */
+.profil-lien {
+  color: inherit;
+  cursor: pointer;
+}
+.profil-lien:hover {
+  text-decoration: underline;
+}
+/* page profil d'un collègue : la fiche seule, centrée */
+.detail-head.profil-seul,
+.profil-seul .detail-head {
+  justify-content: center;
+  margin-top: 24px;
+}
+/* page profil : en-tête en une colonne centrée (avatar, nom, email, rôles, chiffres) */
+.detail-head.profil-tete {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 14px;
+  padding-top: 20px;
+}
+.profil-tete .icon.big {
+  width: 84px;
+  height: 84px;
+  border-radius: 22px;
+  font-size: 32px;
+}
+.profil-tete .row {
+  justify-content: center;
+}
+/* profil réduit (collègue sans projet en commun) : pas de marge en plus */
+.profil-seul .detail-head.profil-tete {
+  margin-top: 0;
+}
+/* page profil : puces de chiffres sous le nom */
+.profil-puces {
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+/* page profil : cartes de synthèse empilées à droite */
+.profil-cote {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+/* lignes cliquables des cartes « Projets » et « Derniers commentaires » */
+.profil-projet,
+.profil-com {
+  display: block;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+.profil-projet:first-child,
+.profil-com:first-child {
+  border-top: 0;
+}
+.profil-projet .bar {
+  margin-top: 6px;
+}
+.profil-com .sub {
+  color: var(--muted);
+  font-size: 13px;
+}
+.profil-projet:hover b,
+.profil-com:hover b {
+  color: var(--accent);
+}
+/* personne d'assigné : pastille grise neutre */
+.icon.vide {
+  background: var(--surface2);
+  color: var(--muted);
+  text-shadow: none;
+}
+
+/* ==================================================================
+   Page Statistiques (stats.js) : cartes chiffres, barres, anneau, histogramme
+   ================================================================== */
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(150px,1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.kpi b {
+  font-size: 28px;
+  color: var(--accent);
+}
+.kpi span {
+  color: var(--muted);
+  font-size: 13px;
+}
+.stats-grille {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 16px;
+}
+.stat-large {
+  grid-column: 1 / -1;
+}
+@media (max-width: 800px) {
+  .stats-grille {
+    grid-template-columns: 1fr;
+  }
+}
+.stat-vide {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 4px 0;
+}
+/* barres horizontales (largeur en %), segments empilés */
+.stat-ligne {
+  margin: 8px 0 12px;
+}
+.stat-nom {
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.stat-bar {
+  display: flex;
+  height: 10px;
+  margin-top: 4px;
+  background: var(--surface2);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.stat-bar i {
+  display: block;
+  height: 100%;
+  transform-origin: left;
+  animation: barreIn .6s ease-out both;
+}
+@keyframes barreIn {
+  from {
+    transform: scaleX(0);
+  }
+}
+a:hover .stat-nom {
+  color: var(--accent);
+}
+/* anneau + légende */
+.donut {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.donut svg {
+  width: 160px;
+  height: 160px;
+  flex: none;
+}
+.donut-total {
+  font-size: 22px;
+  font-weight: 700;
+  fill: var(--text);
+}
+.donut-sous {
+  font-size: 10px;
+  fill: var(--muted);
+}
+.legende div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+}
+.legende i {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+.legende span {
+  color: var(--muted);
+  font-size: 13px;
+}
+/* histogramme vertical des commentaires */
+.histo {
+  display: grid;
+  grid-template-columns: repeat(14,1fr);
+  align-items: end;
+  gap: 4px;
+  height: 170px;
+}
+.histo div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+}
+.histo i {
+  display: block;
+  width: 100%;
+  min-height: 2px;
+  background: var(--accent);
+  border-radius: 4px 4px 0 0;
+  transform-origin: bottom;
+  animation: histoIn .6s ease-out both;
+}
+@keyframes histoIn {
+  from {
+    transform: scaleY(0);
+  }
+}
+.histo-val,
+.histo-jour {
+  font-size: 11px;
+  color: var(--muted);
+}
+/* points d'attention : trois listes côte à côte (une colonne sur mobile) */
+#gAttention {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+  gap: 16px;
+}
+.attention h4 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+.attention a {
+  display: block;
+  margin: 4px 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .stat-bar i,
+  .histo i {
+    animation: none;
+  }
+}
+
+/* ==================================================================
+   Page Tâche : panneau « Tâche » / « Gestion », statut et membre agrandis et centrés
+   ================================================================== */
+.panel-tache {
+  display: flex;
+  flex-direction: column;
+}
+/* zone centrale : remplit la carte (même hauteur que « Commentaires ») et centre son contenu */
+.pt-centre {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  text-align: center;
+  padding: 10px 0;
+}
+.pt-bloc {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+.panel-tache .pt-label {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.pt-sep {
+  width: 60%;
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 0;
+}
+/* statut : badge plus grand + engrenage plus grand (même vitesse selon le statut) */
+.pt-statut {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.pt-statut .st {
+  font-size: 1.15rem;
+  padding: 6px 16px;
+}
+.pt-statut .gear-mini {
+  width: 40px;
+  height: 40px;
+}
+/* membre affecté : avatar, nom et rôle agrandis (renderMembre) */
+.panel-tache .membre {
+  justify-content: center;
+  margin: 0;
+  gap: 14px;
+  text-align: left;
+}
+.panel-tache .membre .icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+  font-size: 22px;
+}
+.panel-tache .membre b {
+  font-size: 1.25rem;
+}
+.panel-tache .membre .sub {
+  font-size: 1.1rem;
+}
+/* listes déroulantes et bouton : centrés, largeur raisonnable */
+.panel-tache select,
+.pt-save {
+  width: 100%;
+  max-width: 280px;
+}
+
+/* ==================================================================
+   Fond commun à toutes les pages : couche fixe derrière le contenu
+   (élément .fond-anime ajouté une fois par common.js) : trois grands halos doux
+   qui dérivent très lentement, puis une grille de points immobile par-dessus.
+   Animation uniquement en transform ; couleurs dans --bg, --halo-1/2/3, --bg-grid.
+   ================================================================== */
+.fond-anime {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+/* grille de points, immobile, au-dessus des halos */
+.fond-anime::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(var(--bg-grid) 1px, transparent 1.5px);
+  background-size: 22px 22px;
+}
+/* halo = grand disque au dégradé radial (doux sans filtre de flou) */
+.fond-anime .halo {
+  position: absolute;
+  width: 70vmax;
+  height: 70vmax;
+  border-radius: 50%;
+  will-change: transform;
+  animation: haloDerive 32s ease-in-out infinite alternate;
+}
+.fond-anime .halo-a {
+  top: -30vmax;
+  left: -25vmax;
+  background: radial-gradient(circle, var(--halo-1), transparent 65%);
+}
+.fond-anime .halo-b {
+  top: 10vh;
+  right: -30vmax;
+  background: radial-gradient(circle, var(--halo-2), transparent 65%);
+  animation-duration: 38s;
+  animation-direction: alternate-reverse;
+}
+.fond-anime .halo-c {
+  bottom: -35vmax;
+  left: 20vw;
+  background: radial-gradient(circle, var(--halo-3), transparent 65%);
+  animation-duration: 27s;
+}
+@keyframes haloDerive {
+  from {
+    transform: translate(0,0) scale(1);
+  }
+  to {
+    transform: translate(6vw,4vh) scale(1.12);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fond-anime .halo {
+    animation: none;
+  }
+}
+
+/* ==================================================================
+   Barre du haut : bloc utilisateur (avatar, email, pastilles de rôles) puis Déconnexion
+   ================================================================== */
+.user {
+  gap: 20px;   /* espace entre le bloc utilisateur et « Déconnexion » */
+}
+.user-bloc {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.user-bloc .icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  font-size: 13px;
+}
+.user-txt {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  line-height: 1.2;
+}
+.user-txt .mail {
+  color: var(--text);
+  font-size: 13px;
+}
+.user-roles {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+/* pastilles de rôles : fond doux, texte foncé de la même teinte (lisible en clair et en sombre) */
+.role-pill {
+  display: inline-block;
+  line-height: 1.5;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.role-pill.admin {
+  background: color-mix(in srgb,var(--warn) 22%,transparent);
+  color: color-mix(in srgb,var(--warn) 60%,var(--text));
+}
+.role-pill.membre {
+  background: color-mix(in srgb,var(--accent) 16%,transparent);
+  color: color-mix(in srgb,var(--accent) 65%,var(--text));
+}
+.role-pill.metier {
+  background: rgba(150,120,230,.16);
+  color: color-mix(in srgb,#7c5cd6 70%,var(--text));
+}
+/* la zone utilisateur garde sa place ; si les liens manquent de place, ils défilent */
+.user {
+  flex: none;
+}
+.top nav {
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+/* écran étroit : seulement l'avatar (email et rôles visibles au survol via title) */
+@media (max-width: 800px) {
+  .user-txt {
+    display: none;
+  }
+  .user {
+    gap: 10px;
+    margin-left: auto;
+  }
+  /* liens sur une seconde ligne, défilant horizontalement si besoin */
+  .top .wrap {
+    flex-wrap: wrap;
+    height: auto;
+    row-gap: 4px;
+    padding-top: 8px;
+    padding-bottom: 6px;
+  }
+  .top nav {
+    order: 3;
+    flex: 1 0 100%;
+  }
+}
+
+/* ==================================================================
+   Équilibre des colonnes : la dernière carte d'une pile s'étire pour finir
+   à la même hauteur que la colonne voisine (pas de vide sous la pile)
+   ================================================================== */
+.profil-cote > .panel:last-child {
+  flex: 1;
 }
