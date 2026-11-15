@@ -34,23 +34,60 @@ async function load() {
     const s = session();
 
     // Affichage : en-tête avec avancement, filtres, cartes des tâches, pagination.
-    view(`<div class="crumb"><a href="index.html">Projets</a> › ${esc(p.nom)}</div>
-      <div class="detail-head">${icon(p.nom, true)}<div style="flex:1;min-width:220px"><h1>${esc(p.nom)}</h1><p>${esc(p.description || 'Aucune description')}</p>
-        <div style="max-width:380px;margin-top:14px"><div class="bar ${v >= 100 ? 'done' : ''}"><i style="width:${v}%"></i></div>
-        <div class="meta" style="margin-top:6px"><span>Avancement du projet</span><b>${v} %</b></div></div></div>
-        <div class="row"><button class="btn primary" id="newT">+ Nouvelle tâche</button>
-        ${s?.admin ? '<button class="btn danger" id="delP">Supprimer</button>' : ''}</div></div>
-      <div class="sec"><h2>Tâches <span style="color:var(--muted);font-weight:500">(${tot})</span></h2>
-        <div class="chips">${[['', 'Toutes'], ['AFaire', 'À faire'], ['EnCours', 'En cours'], ['Terminee', 'Terminées']].map(([k, l]) =>
-          `<button class="chip ${statut === k ? 'on' : ''}" data-s="${k}">${l}</button>`).join('')}</div></div>
+    view(`<div class="crumb">
+        <a href="index.html">Projets</a> › ${esc(p.nom)}
+      </div>
+
+      <div class="detail-head">
+        ${icon(p.nom, true)}
+        <div style="flex:1;min-width:220px">
+          <h1>${esc(p.nom)}</h1>
+          <p>${esc(p.description || 'Aucune description')}</p>
+          <div style="max-width:380px;margin-top:14px">
+            <div class="bar ${v >= 100 ? 'done' : ''}"><i style="width:${v}%"></i></div>
+            <div class="meta" style="margin-top:6px">
+              <span>Avancement du projet</span>
+              <b>${v} %</b>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <button class="btn primary" id="newT">+ Nouvelle tâche</button>
+          ${s?.admin ? '<button class="btn danger" id="delP">Supprimer</button>' : ''}
+        </div>
+      </div>
+
+      <div class="sec">
+        <h2>Tâches <span style="color:var(--muted);font-weight:500">(${tot})</span></h2>
+        <div class="chips">
+          ${[['', 'Toutes'], ['AFaire', 'À faire'], ['EnCours', 'En cours'],
+            ['Terminee', 'Terminées']].map(([k, l]) =>
+              `<button class="chip ${statut === k ? 'on' : ''}"
+                data-s="${k}">${l}</button>`).join('')}
+        </div>
+      </div>
+
       ${items.length ? `<div class="grid">${items.map(x => `
         <a class="card" href="tache.html?id=${x.id}">
-          <div class="head">${icon(x.titre)}<div><h3>${esc(x.titre)}</h3><span class="st ${x.statut}">${STATUTS[x.statut] || x.statut}</span></div></div>
+          <div class="head">
+            ${icon(x.titre)}
+            <div>
+              <h3>${esc(x.titre)}</h3>
+              <span class="st ${x.statut}">${STATUTS[x.statut] || x.statut}</span>
+            </div>
+          </div>
           <div class="desc">${esc(x.description || 'Pas de description')}</div>
-          <div class="meta"><span>${x.membreId ? '👤 ' + nomMembre(x.membreId) : 'Non assignée'}</span><span>#${x.id}</span></div>
+          <div class="meta">
+            <span>${x.membreId ? '👤 ' + nomMembre(x.membreId) : 'Non assignée'}</span>
+            <span>#${x.id}</span>
+          </div>
         </a>`).join('')}</div>` : emptyBox('✅', 'Aucune tâche pour ce filtre.')}
-      ${pages > 1 ? `<div class="pager"><button class="btn" id="prev" ${page <= 1 ? 'disabled' : ''}>← Précédent</button>
-        <span>Page ${page} / ${pages}</span><button class="btn" id="next" ${page >= pages ? 'disabled' : ''}>Suivant →</button></div>` : ''}`);
+
+      ${pages > 1 ? `<div class="pager">
+        <button class="btn" id="prev" ${page <= 1 ? 'disabled' : ''}>← Précédent</button>
+        <span>Page ${page} / ${pages}</span>
+        <button class="btn" id="next" ${page >= pages ? 'disabled' : ''}>Suivant →</button>
+      </div>` : ''}`);
 
     /* ----- Événements ----- */
 
@@ -89,7 +126,8 @@ async function load() {
     });
   } catch (e) {
     // Projet introuvable ou accès refusé.
-    view(`<div class="crumb"><a href="index.html">Projets</a></div>${emptyBox('⚠️', esc(e.message))}`);
+    view(`<div class="crumb"><a href="index.html">Projets</a></div>
+      ${emptyBox('⚠️', esc(e.message))}`);
   }
 }
 
