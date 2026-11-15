@@ -22,6 +22,16 @@ public class RolesController : ControllerBase
         var roles = await _roleManager.Roles.Select(r=>r.Name).ToListAsync();
         return Ok(roles);
     }
+    // liste des utilisateurs avec leurs roles (lecture seule)
+    [HttpGet("utilisateurs")]
+    public async Task<ActionResult> GetUtilisateurs()
+    {
+        var users = await _userManager.Users.ToListAsync();
+        var resultat = new List<object>();
+        foreach (var u in users)
+            resultat.Add(new { email = u.Email, roles = await _userManager.GetRolesAsync(u) });
+        return Ok(resultat);
+    }
     [HttpPost]
     public async Task<IActionResult> Create(RoleCreateDto dto)
     {

@@ -23,7 +23,7 @@ public class TachesController : ControllerBase
         _projets=projets;
         _context=context;
     }
-    [HttpGet("/api/projets/{projetId}/taches")]
+[HttpGet("/api/projets/{projetId}/taches")]
     public async Task<ActionResult<PagedResult<TacheDto>>> GetByProjet(
         int projetId , StatutTache? statut , int page=1 , int pageSize=10)
     {
@@ -34,7 +34,7 @@ public class TachesController : ControllerBase
         var result=await _taches.GetByProjetAsync(projetId,statut,page,pageSize);
         return Ok(ToPagedDto(result));
     }
-    [HttpGet("/api/membres/{membreId}/taches")]
+[HttpGet("/api/membres/{membreId}/taches")]
     public async Task<ActionResult<PagedResult<TacheDto>>> GetByMembre(int membreId , int page=1 , int pageSize=10 )
     {
         if (await _membres.GetByIdAsync(membreId)==null) 
@@ -52,14 +52,14 @@ public class TachesController : ControllerBase
         return Ok(ToPagedDto(result));
     }
     
-    [HttpGet("{id}")]
+[HttpGet("{id}")]
     public async Task<ActionResult<TacheDto>> GetById (int id)
     {
         var tache = await _taches.GetByIdAsync(id);
         if (tache==null) return NotFound();
         return Ok(ToDto(tache));
     }
-    [HttpPost]
+[HttpPost]
     public async Task<ActionResult<TacheDto>> Create(TacheCreateDto dto)
     {
         if (await _projets.GetByIdAsync(dto.ProjetId)==null)
@@ -73,8 +73,8 @@ public class TachesController : ControllerBase
         await _taches.AddAsync(tache);
         return CreatedAtAction(nameof(GetById),new {id=tache.Id},ToDto(tache));
     }
-    [HttpPut("{id}/affecter")]
-    [Authorize(Roles ="Admin")]
+[HttpPut("{id}/affecter")]
+[Authorize(Roles ="Admin")]
     public async Task<ActionResult<TacheDto>> Affecter(int id , AffecterTacheDto dto)
     {
         var tache = await _taches.GetByIdAsync(id);
@@ -85,7 +85,7 @@ public class TachesController : ControllerBase
         await _taches.UpdateAsync(tache);
         return Ok(ToDto(tache));
     }
-    [HttpPut("{id}/statut")]
+[HttpPut("{id}/statut")]
     public async Task<ActionResult<TacheDto>> ChangerStatut(int id ,ChangerStatutDto dto)
         {
         var tache = await _taches.GetByIdAsync(id);
@@ -102,8 +102,8 @@ public class TachesController : ControllerBase
         await _taches.UpdateAsync(tache);
         return Ok(ToDto(tache));
         }
-    [HttpDelete("{id}")]
-    [Authorize(Roles ="Admin")]
+[HttpDelete("{id}")]
+[Authorize(Roles ="Admin")]
     public async Task<IActionResult> Delete(int id)
     {
         var tache = await _taches.GetByIdAsync (id);
@@ -127,7 +127,7 @@ public class TachesController : ControllerBase
         ProjetId = t.ProjetId,
         MembreId = t.MembreId
     };
-    [HttpGet("/api/projets/mes-projets")]
+[HttpGet("/api/projets/mes-projets")]
     public async Task<ActionResult> MesProjets()
     {
         var email = User.FindFirstValue(ClaimTypes.Email) ?? User.Identity?.Name;
@@ -142,6 +142,51 @@ public class TachesController : ControllerBase
                     .Select(p=> new {p.Id,p.Nom,p.Description})
                     .ToListAsync();
         return Ok(projets);
-
     }
+[HttpGet("/api/membres/mon-equipe")]
+public async Task<ActionResult> MonEquipe()
+{
+    var email = User.FindFirstValue(ClaimTypes.Email) ?? User.Identity?.Name;
+    var moi = await _context.Membres.FirstOrDefaultAsync(m => m.Email == email);
+    if (moi == null) return Ok(new List<object>());
+
+    // 1. Les projets où j'ai au moins une tâche
+    var mesProjetsIds = await _context.Taches
+        .Where(t => t.MembreId == moi.Id)
+        .Select(t => t.ProjetId)
+        .Distinct()
+        .ToListAsync();
+
+    var projets = await _context.Projets
+        .Where(p => mesProjetsIds.Contains(p.Id))
+        .Select(p => new { p.Id, p.Nom })
+        .ToListAsync();
+
+    // 2. Qui travaille sur ces projets (couples projet / membre)
+    var affectations = await _context.Taches
+        .Where(t => mesProjetsIds.Contains(t.ProjetId) && t.MembreId != null)
+        .Select(t => new { t.ProjetId, MembreId = t.MembreId.GetValueOrDefault() })
+        .Distinct()
+        .ToListAsync();
+
+    // 3. Les infos de ces membres
+    var membresIds = affectations.Select(a => a.MembreId).Distinct().ToList();
+    var membres = await _context.Membres
+        .Where(m => membresIds.Contains(m.Id))
+        .Select(m => new { m.Id, m.Nom, m.Email })
+        .ToListAsync();
+
+    // 4. Assemblage en mémoire
+    var resultat = projets.Select(p => new
+    {
+        p.Id,
+        p.Nom,
+        Membres = affectations
+            .Where(a => a.ProjetId == p.Id)
+            .Select(a => membres.First(m => m.Id == a.MembreId))
+            .ToList()
+    });
+
+    return Ok(resultat);
+}
 }

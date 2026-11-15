@@ -19,6 +19,20 @@ const icon = (n, big) => `<div class="icon ${big ? 'big' : ''}" style="backgroun
 const view = html => { $('#app').innerHTML = html; };
 const skeleton = n => `<div class="grid">${'<div class="skeleton"></div>'.repeat(n)}</div>`;
 const emptyBox = (e, t) => `<div class="empty"><div class="big">${e}</div><p>${t}</p></div>`;
+/* recherche : minuscules + sans accents ("Tâche" -> "tache") et barre de recherche commune */
+const norm = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+const bar = (id, ph = 'Rechercher par nom…') => `<div class="search"><span>🔍</span><input id="${id}" placeholder="${ph}" autocomplete="off"></div>`;
+/* carreaux de 4 lignes */
+const carreaux = (arr, fn) => {
+  let h = '';
+  for (let i = 0; i < arr.length; i += 4)
+    h += `<div class="tile">${arr.slice(i, i + 4).map(fn).join('')}</div>`;
+  return h;
+};
+const tile = html => `<div class="tile">${html}</div>`;
+/* barre d'avancement + « 33,3 % terminé » (rien si v est null) */
+const avHtml = v => v == null ? '' : `<div class="bar${v >= 100 ? ' done' : ''}"><i style="width:${v}%"></i></div>
+  <span class="sub">${v.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} % terminé</span>`;
 function toast(msg, err){ const t = document.createElement('div'); t.className = 'toast' + (err ? ' err' : ''); t.textContent = msg;
   document.body.appendChild(t); setTimeout(() => t.remove(), 3200); }
 const confirmDo = (msg, fn) => { if (confirm(msg)) fn(); };
@@ -69,6 +83,8 @@ function modal(title, fields, onOk, okLabel = 'Enregistrer'){
   m.innerHTML = `<form class="box"><h3>${esc(title)}</h3>${fields.map(f => `
     <label>${esc(f.label)}</label>
     ${f.type === 'textarea' ? `<textarea name="${f.name}" rows="3">${esc(f.value || '')}</textarea>`
+      : f.type === 'select' ? `<select name="${f.name}" ${f.required ? 'required' : ''}>${(f.options || []).map(o =>
+          `<option value="${esc(o.value)}" ${String(o.value) === String(f.value ?? '') ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select>`
       : `<input name="${f.name}" type="${f.type || 'text'}" value="${esc(f.value || '')}" ${f.required ? 'required' : ''}>`}`).join('')}
     <div class="foot"><button type="button" class="btn" data-x>Annuler</button><button class="btn primary">${esc(okLabel)}</button></div></form>`;
   document.body.appendChild(m);
