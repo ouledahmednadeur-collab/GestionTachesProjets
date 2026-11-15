@@ -9,13 +9,24 @@
 
 // Dessine la page selon le rôle ; rappelée après une création ou une suppression.
 async function load() {
-  view(`<section class="col"><div class="sec"><h2>Membres de l'équipe par projets</h2><div class="actions"><button class="btn primary" id="newM">+ Nouveau membre</button></div></div>${bar('q')}<div id="out">${skeleton(1)}</div></section>`);
+  view(`<section class="col">
+    <div class="sec">
+      <h2>Membres de l'équipe par projets</h2>
+      <div class="actions"><button class="btn primary" id="newM">+ Nouveau membre</button></div>
+    </div>
+    ${bar('q')}
+    <div id="out">${skeleton(1)}</div>
+  </section>`);
   const s0 = session();
 
   if (!s0?.admin) {
     /* =================== Vue Membre : mon équipe =================== */
 
-    view(`<section class="col"><div class="sec"><h2>Mon équipe par projet</h2></div>${bar('q')}<div id="out">${skeleton(1)}</div></section>`);
+    view(`<section class="col">
+      <div class="sec"><h2>Mon équipe par projet</h2></div>
+      ${bar('q')}
+      <div id="out">${skeleton(1)}</div>
+    </section>`);
     const moi = norm(s0.name);   // email du membre connecté
     let projets = null;          // null = pas encore chargé
     const av = {};               // avancement par id de projet (null = appel échoué)
@@ -24,8 +35,12 @@ async function load() {
     // et un lien vers ses tâches.
     const ligne = m => {
       const vous = norm(m.email) === moi;
-      return `<div class="line">${icon(m.nom)}
-        <div class="txt"><b>${esc(m.nom)}${vous ? '<span class="badge vous">Vous</span>' : ''}</b><div class="sub">${esc(m.email)}</div></div>
+      return `<div class="line">
+        ${icon(m.nom)}
+        <div class="txt">
+          <b>${esc(m.nom)}${vous ? '<span class="badge vous">Vous</span>' : ''}</b>
+          <div class="sub">${esc(m.email)}</div>
+        </div>
         ${vous ? `<a class="btn small" href="membre.html?id=${m.id}">Mes tâches</a>` : ''}
       </div>`;
     };
@@ -41,10 +56,13 @@ async function load() {
         ? emptyBox('👥', "Vous n'êtes affecté à aucun projet pour le moment.")
         : !rangs.length ? emptyBox('🔍', 'Aucun membre ne correspond à votre recherche.')
         : rangs.map(({ p, ms }) => `<div class="prow">
-            <div class="pside">${icon(p.nom)}<b>${esc(p.nom)}</b>
+            <div class="pside">
+              ${icon(p.nom)}
+              <b>${esc(p.nom)}</b>
               <span class="sub">${p.membres.length} membre${p.membres.length > 1 ? 's' : ''}</span>
               ${avHtml(av[p.id])}
-              <a class="plink" href="projet.html?id=${p.id}">Ouvrir le projet →</a></div>
+              <a class="plink" href="projet.html?id=${p.id}">Ouvrir le projet →</a>
+            </div>
             <div class="vsep"></div>
             <div class="pmain">${carreaux(ms, ligne)}</div>
           </div>`).join('');
@@ -70,8 +88,12 @@ async function load() {
   let rangs = null;   // [{ p, v, ms }] ; p = null pour « Sans projet »
 
   // Ligne d'un membre avec ses boutons « Voir ses tâches » et « Supprimer ».
-  const ligneA = m => `<div class="line">${icon(m.nom)}
-      <div class="txt"><b>${esc(m.nom)}</b><div class="sub">${esc(m.email)}</div></div>
+  const ligneA = m => `<div class="line">
+      ${icon(m.nom)}
+      <div class="txt">
+        <b>${esc(m.nom)}</b>
+        <div class="sub">${esc(m.email)}</div>
+      </div>
       <a class="btn small" href="membre.html?id=${m.id}">Voir ses tâches</a>
       <button class="btn small danger" data-del="${m.id}">Supprimer</button>
     </div>`;
@@ -86,11 +108,18 @@ async function load() {
     $('#out').innerHTML = !rangs.length ? emptyBox('👥', 'Aucun membre.')
       : !vis.length ? emptyBox('🔍', 'Aucun membre ne correspond à votre recherche.')
       : vis.map(r => `<div class="prow">
-          <div class="pside">${icon(r.p ? r.p.nom : 'Sans projet')}<b>${r.p ? esc(r.p.nom) : 'Sans projet'}</b>
+          <div class="pside">
+            ${icon(r.p ? r.p.nom : 'Sans projet')}
+            <b>${r.p ? esc(r.p.nom) : 'Sans projet'}</b>
             <span class="sub">${r.ms.length} membre${r.ms.length > 1 ? 's' : ''}</span>
-            ${r.p ? avHtml(r.v) + `<a class="plink" href="projet.html?id=${r.p.id}">Ouvrir le projet →</a>` : ''}</div>
+            ${r.p ? avHtml(r.v)
+              + `<a class="plink" href="projet.html?id=${r.p.id}">Ouvrir le projet →</a>` : ''}
+          </div>
           <div class="vsep"></div>
-          <div class="pmain">${r.f.length ? carreaux(r.f, ligneA) : tile(emptyBox('👥', 'Aucun membre sur ce projet.'))}</div>
+          <div class="pmain">
+            ${r.f.length ? carreaux(r.f, ligneA)
+              : tile(emptyBox('👥', 'Aucun membre sur ce projet.'))}
+          </div>
         </div>`).join('');
   };
 
