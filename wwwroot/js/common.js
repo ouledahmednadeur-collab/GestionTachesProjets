@@ -445,6 +445,26 @@ function renderTop(active) {
   // Déconnexion : il suffit d'oublier le token (le JWT n'est pas stocké côté serveur).
   const lo = $('#logout');
   if (lo) lo.onclick = () => { store.del('token'); location.href = 'login.html'; };
+  if (s) majMessages(active);
+}
+
+// Lien « Messages » (ajouté à la fin du menu) + badge du nombre de messages non lus.
+// Seulement pour un compte qui a une fiche membre : sinon l'API répond 403
+// (« Compte sans fiche membre »), ce qu'on retient pour la session pour ne plus appeler.
+async function majMessages(active) {
+  const cle = 'sansFiche:' + norm(session()?.name);
+  try { if (sessionStorage.getItem(cle) === '1') return; } catch {}
+  try {
+    const { nonLus } = await api('/api/Messages/non-lus');
+    if (!$('#navMessages')) $('#nav').insertAdjacentHTML('beforeend',
+      `<a id="navMessages" href="messages.html" class="${active === 'messages' ? 'on' : ''}">Messages
+        <span class="nav-badge" hidden></span></a>`);
+    const b = $('#navMessages .nav-badge');
+    b.textContent = nonLus > 99 ? '99+' : nonLus;
+    b.hidden = !nonLus;
+  } catch (e) {
+    if (/réservée/.test(e.message)) try { sessionStorage.setItem(cle, '1'); } catch {}
+  }
 }
 
 /* ---------- Pied de page (identique sur toutes les pages) ---------- */

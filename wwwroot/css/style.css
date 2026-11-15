@@ -1821,3 +1821,178 @@ a:hover .stat-nom {
 .profil-cote > .panel:last-child {
   flex: 1;
 }
+
+/* ==================================================================
+   Messagerie (messages.js) : badge du menu, liste des conversations, bulles
+   ================================================================== */
+.nav-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  margin-left: 4px;
+  border-radius: 999px;
+  background: var(--bad);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+.nav-badge[hidden] {
+  display: none;
+}
+.msg-page {
+  display: grid;
+  grid-template-columns: minmax(260px,340px) minmax(0,1fr);
+  gap: 16px;
+  align-items: stretch;
+}
+.msg-liste #nouveau {
+  margin-bottom: 10px;
+}
+.conv {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.conv:hover,
+.conv.on {
+  background: var(--surface2);
+}
+.conv .icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  font-size: 15px;
+}
+.conv-txt {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.conv-txt .sub {
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.msg-discussion {
+  display: flex;
+  flex-direction: column;
+  min-height: 480px;
+}
+.disc-tete {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.disc-tete .icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+.disc-tete .retour {
+  display: none;
+}
+.bulles {
+  flex: 1;
+  max-height: 60vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 2px;
+}
+.plus-ancien {
+  align-self: center;
+}
+.bulle {
+  max-width: 75%;
+  padding: 8px 12px;
+  border-radius: 14px;
+}
+.bulle.moi {
+  align-self: flex-end;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-bottom-right-radius: 4px;
+}
+.bulle.autre {
+  align-self: flex-start;
+  background: var(--surface2);
+  border-bottom-left-radius: 4px;
+}
+.bulle-txt {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.bulle-date {
+  margin-top: 4px;
+  font-size: 11px;
+  opacity: .75;
+}
+/* « Supprimer » discret, visible au survol de ses propres bulles */
+.bulle-suppr {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+  opacity: 0;
+}
+.bulle:hover .bulle-suppr,
+.bulle-suppr:focus {
+  opacity: 1;
+}
+.saisie {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+.saisie textarea {
+  resize: vertical;
+}
+.saisie-pied {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+}
+/* mobile : une colonne, la liste puis la discussion (bouton retour) */
+@media (max-width: 800px) {
+  .msg-page {
+    grid-template-columns: 1fr;
+  }
+  .msg-page .msg-discussion {
+    display: none;
+  }
+  .msg-page.voir-discussion .msg-liste {
+    display: none;
+  }
+  .msg-page.voir-discussion .msg-discussion {
+    display: flex;
+  }
+  .disc-tete .retour {
+    display: inline-flex;
+  }
+  .bulle {
+    max-width: 90%;
+  }
+}

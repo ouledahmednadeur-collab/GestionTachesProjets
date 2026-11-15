@@ -50,6 +50,9 @@ view(`<div class="crumb"><a href="membres.html">Membres</a></div>${skeleton(3)}`
   }
 
   const moi = norm(m.email) === norm(s?.name);   // le membre consulte son propre profil
+  // compte sans fiche membre (retenu par majMessages) : pas de bouton « Envoyer un message »
+  let sansFiche = false;
+  try { sansFiche = sessionStorage.getItem('sansFiche:' + norm(s?.name)) === '1'; } catch {}
   const complet = !!s?.admin || moi;              // toutes ses tâches visibles
 
   // Rôles : liste des comptes si Admin (endpoint réservé à l'Admin), sa session sur son profil,
@@ -107,6 +110,8 @@ view(`<div class="crumb"><a href="membres.html">Membres</a></div>${skeleton(3)}`
         <p>${esc(m.email)}</p>
         ${roles.length ? `<div class="row" style="margin-top:8px">${roles.map(r =>
           `<span class="badge ${r === 'Admin' ? 'admin' : ''}">${esc(r)}</span>`).join('')}</div>` : ''}
+        ${!moi && !sansFiche ? `<div class="row" style="margin-top:10px">
+          <a class="btn primary small" href="messages.html?avec=${m.id}">Envoyer un message</a></div>` : ''}
         ${chiffres ? `<div class="row profil-puces">
           ${puce(taches.length, taches.length > 1 ? 'tâches' : 'tâche')}
           ${puce(faites, faites > 1 ? 'terminées' : 'terminée')}
