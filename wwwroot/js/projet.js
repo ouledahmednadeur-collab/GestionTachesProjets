@@ -78,7 +78,7 @@ async function load() {
           </div>
           <div class="desc">${esc(x.description || 'Pas de description')}</div>
           <div class="meta">
-            <span>${x.membreId ? '👤 ' + nomMembre(x.membreId) : 'Non assignée'}</span>
+            <span>${x.membreId ? memberLink(x.membreId, '👤 ' + nomMembre(x.membreId), true) : 'Non assignée'}</span>
             <span>#${x.id}</span>
           </div>
         </a>`).join('')}</div>` : emptyBox('✅', 'Aucune tâche pour ce filtre.')}

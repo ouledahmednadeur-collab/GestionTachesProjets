@@ -57,10 +57,10 @@ const carte = t => {
       </div>
       <div><span class="st ${t.statut}">${STATUTS[t.statut] || esc(t.statut)}</span></div>
       <div class="meta">
-        ${m ? `<span class="tache-membre">
+        ${m ? memberLink(m.id, `<span class="tache-membre">
             <span class="mini-av" style="background:${colorOf(m.nom)}">${esc(initials(m.nom).charAt(0))}</span>
             ${esc(m.nom)} <small>· ${esc(metier(m))}</small>
-          </span>` : '<span>Non affectée</span>'}
+          </span>`, true) : '<span>Non affectée</span>'}
         <span>#${t.id}</span>
       </div>
     </a>`;

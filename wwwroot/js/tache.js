@@ -8,6 +8,7 @@
 
 // Identifiant de la tâche lu dans l'URL (le + convertit le texte en nombre).
 const id = +param('id');
+let pageComs = 1;   // page courante des commentaires (10 par page)
 
 /* ---------- Chargement, affichage et événements ---------- */
 
@@ -31,6 +32,20 @@ async function load() {
     // Id du membre connecté (par son email) : un membre ne supprime que ses commentaires.
     const moiId = ms.find(m => norm(m.email) === norm(s?.name))?.id;
 
+    // Titulaire de la tâche (membre affecté) ou undefined si la tâche n'est pas affectée.
+    const titulaire = ms.find(m => m.id === t.membreId);
+    // Nom affiché : celui renvoyé par l'API, sinon celui de la liste des membres déjà chargée.
+    const nomTitulaire = t.membreNom || titulaire?.nom;
+
+    // Panneau « Gestion » : seulement pour l'Admin ou le titulaire de la tâche.
+    // Simple confort d'interface : la sécurité réelle est faite par le backend
+    // (PUT /api/Taches/{id}/statut renvoie 403 pour la tâche d'un autre membre).
+    const gere = s?.admin || (moiId != null && t.membreId === moiId);
+
+    // Petit engrenage (forme du logo) dont la vitesse dépend du statut de la TÂCHE :
+    // arrêté si Terminée, lent si À faire, rapide si En cours (classes gear--…).
+    const engrenage = gearStatut(t.statut);   // fonction partagée (common.js)
+
     // Affichage : fil d'Ariane, en-tête, commentaires (à gauche), gestion (à droite).
     view(`<div class="crumb">
         <a href="index.html">Projets</a>
@@ -43,6 +58,8 @@ async function load() {
         <div style="flex:1">
           <h1>${esc(t.titre)}</h1>
           <span class="st ${t.statut}">${STATUTS[t.statut] || t.statut}</span>
+          <span class="titulaire">${engrenage}${titulaire
+            ? `Titulaire : <b>${memberLink(titulaire.id, esc(titulaire.nom))}</b>` : 'Non affectée'}</span>
           <p style="margin-top:10px">${esc(t.description || 'Pas de description')}</p>
         </div>
         ${s?.admin ? '<button class="btn danger" id="delT">Supprimer</button>' : ''}
@@ -51,14 +68,7 @@ async function load() {
       <div class="two" style="margin-top:20px">
         <div class="panel">
           <h3 style="margin-top:0">Commentaires (${cs.length})</h3>
-          ${cs.length ? cs.map(c => `
-            <div class="com">
-              <small>${esc(ms.find(m => m.id === c.membreId)?.nom || 'Membre ' + c.membreId)}
-                · ${new Date(c.dateCreation).toLocaleString('fr-FR')}</small>
-              <div>${esc(c.contenu)}</div>
-              ${s?.admin || (moiId != null && c.membreId === moiId)
-                ? `<button class="btn danger" data-delc="${c.id}">Supprimer</button>` : ''}
-            </div>`).join('') : '<p style="color:var(--muted)">Aucun commentaire.</p>'}
+          <div id="listeComs"></div>
           <form id="fc" style="margin-top:14px">
             <label>Écrire un commentaire</label>
             <textarea name="contenu" rows="2" required></textarea>
@@ -71,29 +81,52 @@ async function load() {
           </form>
         </div>
 
-        <div class="panel">
+        ${gere ? `<div class="panel panel-tache">
           <h3 style="margin-top:0">Gestion</h3>
-          <label>Statut</label>
-          <select id="stSel">
-            ${Object.entries(STATUTS).map(([k, l]) =>
-              `<option value="${k}" ${k === t.statut ? 'selected' : ''}>${l}</option>`).join('')}
-          </select>
-          <label>Assignée à</label>
-          ${s?.admin ? `<select id="afSel">
-            <option value="">— Choisir —</option>
-            ${opts(t.membreId)}
-          </select>` : (a => a
-            ? `<p><b>${esc(a.nom)}</b>${norm(a.email) === norm(s?.name) ? ' <span class="badge vous">Vous</span>' : ''}</p>`
-            : '<p style="color:var(--muted)">Non assignée</p>')(ms.find(m => m.id === t.membreId))}
-          <button class="btn primary" id="save"
-            style="margin-top:16px;width:100%">Enregistrer</button>
-        </div>
+          <!-- statut et membre agrandis, centrés dans la carte -->
+          <div class="pt-centre">
+            <div class="pt-bloc">
+              <label class="pt-label" for="stSel">Statut</label>
+              <div class="pt-statut">${engrenage}<span class="st ${t.statut}">${STATUTS[t.statut] || t.statut}</span></div>
+              <select id="stSel">
+                ${Object.entries(STATUTS).map(([k, l]) =>
+                  `<option value="${k}" ${k === t.statut ? 'selected' : ''}>${l}</option>`).join('')}
+              </select>
+            </div>
+            <hr class="pt-sep">
+            <div class="pt-bloc">
+              <label class="pt-label"${s?.admin ? ' for="afSel"' : ''}>Assignée à</label>
+              ${s?.admin ? `${renderMembre(nomTitulaire, t.membreRole, '', t.membreId)}
+              <select id="afSel">
+                <option value="">— Choisir —</option>
+                ${opts(t.membreId)}
+              </select>` : renderMembre(nomTitulaire, t.membreRole,
+                t.membreId === moiId ? ' <span class="badge vous">Vous</span>' : '', t.membreId)}
+            </div>
+            <button class="btn primary pt-save" id="save">Enregistrer</button>
+          </div>
+        </div>` : `<div class="panel panel-tache">
+          <h3 style="margin-top:0">Tâche</h3>
+          <!-- lecture seule : statut et membre agrandis, centrés dans la carte -->
+          <div class="pt-centre">
+            <div class="pt-bloc">
+              <span class="pt-label">Statut</span>
+              <div class="pt-statut">${engrenage}<span class="st ${t.statut}">${STATUTS[t.statut] || t.statut}</span></div>
+            </div>
+            <hr class="pt-sep">
+            <div class="pt-bloc">
+              <span class="pt-label">Assignée à</span>
+              ${renderMembre(nomTitulaire, t.membreRole, '', t.membreId)}
+            </div>
+          </div>
+        </div>`}
       </div>`);
 
     /* ----- Événements ----- */
 
     // Bouton « Enregistrer » : changement de statut, puis affectation éventuelle.
-    $('#save').onclick = async () => {
+    // Branché seulement si le panneau « Gestion » est affiché (sinon #save n'existe pas).
+    if ($('#save')) $('#save').onclick = async () => {
       try {
         // 1. Lecture de la valeur choisie dans la liste #stSel :
         //    'AFaire', 'EnCours' ou 'Terminee' (les clés de STATUTS, noms de l'enum C#).
@@ -134,16 +167,36 @@ async function load() {
     };
 
     // Suppression d'un commentaire (Admin, ou auteur du commentaire), puis rechargement.
-    document.querySelectorAll('[data-delc]').forEach(b => b.onclick = () =>
-      confirmDo('Supprimer ce commentaire ?', async () => {
-        try {
-          await api(`/api/Commentaires/${b.dataset.delc}`, 'DELETE');
-          toast('Commentaire supprimé');
-          load();
-        } catch (e) {
-          toast(e.message, true);
-        }
-      }));
+    // Commentaires paginés par 10 (pagination commune) ; pageComs est hors de load()
+    // pour garder la page courante quand la page se recharge après une suppression.
+    const comHtml = c => `
+            <div class="com">
+              ${renderMembre(ms.find(m => m.id === c.membreId)?.nom || 'Membre ' + c.membreId, null,
+                ` <small>· ${new Date(c.dateCreation).toLocaleString('fr-FR')}</small>`, c.membreId)}
+              <div>${esc(c.contenu)}</div>
+              ${s?.admin || (moiId != null && c.membreId === moiId)
+                ? `<button class="btn danger" data-delc="${c.id}">Supprimer</button>` : ''}
+            </div>`;
+    const brancherSuppressions = () =>
+      document.querySelectorAll('[data-delc]').forEach(b => b.onclick = () =>
+        confirmDo('Supprimer ce commentaire ?', async () => {
+          try {
+            await api(`/api/Commentaires/${b.dataset.delc}`, 'DELETE');
+            toast('Commentaire supprimé');
+            load();
+          } catch (e) {
+            toast(e.message, true);
+          }
+        }));
+    const rendreComs = () => {
+      const r = paginer(cs, 10, pageComs);
+      pageComs = r.page;
+      $('#listeComs').innerHTML = cs.length ? r.items.map(comHtml).join('') + r.html
+        : '<p style="color:var(--muted)">Aucun commentaire.</p>';
+      brancherPager($('#listeComs'), d => { pageComs += d; rendreComs(); });
+      brancherSuppressions();
+    };
+    rendreComs();
 
     // Suppression (bouton visible seulement pour l'Admin), puis retour au projet.
     const dt = $('#delT');

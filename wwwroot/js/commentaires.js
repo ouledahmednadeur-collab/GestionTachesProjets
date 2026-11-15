@@ -37,6 +37,7 @@ async function load() {
 
   // null = pas encore chargé ; tachesParId / nomsParId / projetsParId servent à l'affichage ;
   // taches et membres = listes complètes, pour remplir les filtres en cascade.
+  let page = 1;   // page courante de la grille
   let coms = null, tachesParId = {}, nomsParId = {}, projetsParId = {}, taches = [], membres = [];
 
   /* ----- Rendu ----- */
@@ -48,9 +49,9 @@ async function load() {
     const t = tachesParId[c.tacheId];
     return `<a class="card" href="tache.html?id=${c.tacheId}">
         <div class="head">
-          ${icon(auteur)}
+          ${memberLink(c.membreId, icon(auteur), true)}
           <div>
-            <h3>${esc(auteur)}</h3>
+            <h3>${memberLink(c.membreId, esc(auteur), true)}</h3>
             <span class="sub">${new Date(c.dateCreation).toLocaleString('fr-FR')}</span>
           </div>
         </div>
@@ -89,10 +90,14 @@ async function load() {
     const q = norm($('#q').value), p = $('#fP').value, t = $('#fT').value, m = $('#fM').value;
     const f = coms.filter(c => norm(c.contenu).includes(q) && duProjet(c, p)
       && (!t || String(c.tacheId) === t) && (!m || String(c.membreId) === m));
+    // Grille paginée par 12 (pagination commune, page conservée tant que le filtre ne change pas).
+    const r = paginer(f, 12, page);
+    page = r.page;
     $('#out').innerHTML = f.length
-      ? `<div class="grid">${f.map(carte).join('')}</div>`
+      ? `<div class="grid">${r.items.map(carte).join('')}</div>${r.html}`
       : !coms.length ? emptyBox('💬', 'Aucun commentaire pour le moment.')
       : '<p style="color:var(--muted);font-size:14px;margin:4px 0">Aucun résultat</p>';
+    brancherPager($('#out'), d => { page += d; draw(); });
   };
 
   /* ----- Chargement des données ----- */
@@ -124,8 +129,9 @@ async function load() {
   /* ----- Événements ----- */
 
   // Projet : recalcule les listes Tâche et Membre, puis l'affichage.
-  $('#fP').onchange = () => { remplirFiltres(); draw(); };
-  $('#q').oninput = $('#fT').onchange = $('#fM').onchange = draw;
+  // Tout changement de filtre ou de recherche revient à la page 1.
+  $('#fP').onchange = () => { remplirFiltres(); page = 1; draw(); };
+  $('#q').oninput = $('#fT').onchange = $('#fM').onchange = () => { page = 1; draw(); };
 }
 
 /* ---------- Initialisation ---------- */

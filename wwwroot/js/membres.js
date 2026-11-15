@@ -5,6 +5,29 @@
  *            et suppression.
  * ===================================================================== */
 
+/* ---------- Pagination (état conservé quand load() redessine après une action) ---------- */
+
+// page = page des sections projet (6 par page) ; sec = page des membres de chaque section (10).
+const pagesM = { page: 1, sec: {} };
+const pagesM1 = () => { pagesM.page = 1; pagesM.sec = {}; };
+
+// Sections paginées : rend chaque section avec rendu(section, membresDeLaPage, pagerMembres)
+// puis la pagination des sections, et branche tous les boutons (redessin par draw).
+function sectionsPaginees(liste, cle, rendu, draw) {
+  const r = paginer(liste, 6, pagesM.page);
+  pagesM.page = r.page;
+  setTimeout(() => {
+    brancherPager($('#pgSections'), d => { pagesM.page += d; draw(); });
+    document.querySelectorAll('#out [data-sec]').forEach(z =>
+      brancherPager(z, d => { pagesM.sec[z.dataset.sec] += d; draw(); }));
+  });
+  return r.items.map(x => {
+    const k = cle(x), pm = paginer(x.liste, 10, pagesM.sec[k]);
+    pagesM.sec[k] = pm.page;
+    return rendu(x, pm, k);
+  }).join('') + `<div id="pgSections">${r.html}</div>`;
+}
+
 /* ---------- Chargement, affichage et événements ---------- */
 
 // Dessine la page selon le rôle ; rappelée après une création ou une suppression.
@@ -36,12 +59,12 @@ async function load() {
     const ligne = m => {
       const vous = norm(m.email) === moi;
       return `<div class="line">
-        ${icon(m.nom)}
+        ${memberLink(m.id, icon(m.nom))}
         <div class="txt">
-          <b>${esc(m.nom)}${vous ? '<span class="badge vous">Vous</span>' : ''}</b>
+          <b>${memberLink(m.id, esc(m.nom))}${vous ? '<span class="badge vous">Vous</span>' : ''}</b>
           <div class="sub">${esc(m.email)}</div>
         </div>
-        ${vous ? `<a class="btn small" href="membre.html?id=${m.id}">Mes tâches</a>` : ''}
+        ${vous ? `<a class="btn small" href="${memberUrl(m.id)}">Mes tâches</a>` : ''}
       </div>`;
     };
 
@@ -55,8 +78,8 @@ async function load() {
       $('#out').innerHTML = !projets.length
         ? emptyBox('👥', "Vous n'êtes affecté à aucun projet pour le moment.")
         : !rangs.length ? emptyBox('🔍', 'Aucun membre ne correspond à votre recherche.')
-        : rangs.map(({ p, ms }) => `<div class="prow">
-            <div class="pside">
+        : sectionsPaginees(rangs.map(r => ({ ...r, liste: r.ms })), x => x.p.id, ({ p, ms }, pm, k) => `<div class="prow side-row">
+            <div class="pside side-block">
               ${icon(p.nom)}
               <b>${esc(p.nom)}</b>
               <span class="sub">${p.membres.length} membre${p.membres.length > 1 ? 's' : ''}</span>
@@ -64,10 +87,10 @@ async function load() {
               <a class="plink" href="projet.html?id=${p.id}">Ouvrir le projet →</a>
             </div>
             <div class="vsep"></div>
-            <div class="pmain">${carreaux(ms, ligne)}</div>
-          </div>`).join('');
+            <div class="pmain" data-sec="${k}">${carreaux(pm.items, ligne)}${pm.html}</div>
+          </div>`, draw);
     };
-    $('#q').oninput = draw;
+    $('#q').oninput = () => { pagesM1(); draw(); };
 
     // Chargement : projets de l'équipe, puis l'avancement de chacun en parallèle.
     try {
@@ -86,15 +109,23 @@ async function load() {
   /* =================== Vue Admin : tous les membres =================== */
 
   let rangs = null;   // [{ p, v, ms }] ; p = null pour « Sans projet »
+  let roles = {};     // rôles de chaque compte, par email normalisé
 
-  // Ligne d'un membre avec ses boutons « Voir ses tâches » et « Supprimer ».
+  // Badge de rôle, même style que celui de la barre du haut ; « Membre » par défaut.
+  const badgeRole = m => {
+    const r = roles[norm(m.email)] || [];
+    return `<span class="badge ${r.includes('Admin') ? 'admin' : ''}">${esc(r.join(' & ') || 'Membre')}</span>`;
+  };
+
+  // Ligne d'un membre avec son rôle et ses boutons « Voir ses tâches » et « Supprimer ».
   const ligneA = m => `<div class="line">
-      ${icon(m.nom)}
+      ${memberLink(m.id, icon(m.nom))}
       <div class="txt">
-        <b>${esc(m.nom)}</b>
+        <b>${memberLink(m.id, esc(m.nom))}</b>
         <div class="sub">${esc(m.email)}</div>
       </div>
-      <a class="btn small" href="membre.html?id=${m.id}">Voir ses tâches</a>
+      ${badgeRole(m)}
+      <a class="btn small" href="${memberUrl(m.id)}">Voir ses tâches</a>
       <button class="btn small danger" data-del="${m.id}">Supprimer</button>
     </div>`;
 
@@ -107,8 +138,8 @@ async function load() {
       .filter(r => r.f.length || (!q && r.p));
     $('#out').innerHTML = !rangs.length ? emptyBox('👥', 'Aucun membre.')
       : !vis.length ? emptyBox('🔍', 'Aucun membre ne correspond à votre recherche.')
-      : vis.map(r => `<div class="prow">
-          <div class="pside">
+      : sectionsPaginees(vis.map(r => ({ ...r, liste: r.f })), x => x.p ? x.p.id : 'sans', (r, pm, k) => `<div class="prow side-row">
+          <div class="pside side-block">
             ${icon(r.p ? r.p.nom : 'Sans projet')}
             <b>${r.p ? esc(r.p.nom) : 'Sans projet'}</b>
             <span class="sub">${r.ms.length} membre${r.ms.length > 1 ? 's' : ''}</span>
@@ -116,11 +147,11 @@ async function load() {
               + `<a class="plink" href="projet.html?id=${r.p.id}">Ouvrir le projet →</a>` : ''}
           </div>
           <div class="vsep"></div>
-          <div class="pmain">
-            ${r.f.length ? carreaux(r.f, ligneA)
+          <div class="pmain" data-sec="${k}">
+            ${r.f.length ? carreaux(pm.items, ligneA) + pm.html
               : tile(emptyBox('👥', 'Aucun membre sur ce projet.'))}
           </div>
-        </div>`).join('');
+        </div>`, draw);
   };
 
   /* ----- Événements ----- */
@@ -135,7 +166,7 @@ async function load() {
       load();
     });
 
-  $('#q').oninput = draw;
+  $('#q').oninput = () => { pagesM1(); draw(); };   // recherche : retour à la page 1
 
   // Un seul gestionnaire pour tous les boutons « Supprimer » (délégation),
   // qui fonctionne donc aussi après un redessin.
@@ -156,10 +187,14 @@ async function load() {
   /* ----- Chargement des données ----- */
 
   try {
-    const [dm, dp] = await Promise.all([
+    // Rôles chargés une seule fois, comme sur la page Rôles (en cas d'erreur : « Membre »).
+    const [dm, dp, us] = await Promise.all([
       api('/api/Membres?page=1&pageSize=50'),
-      api('/api/Projets?page=1&pageSize=50')]);
+      api('/api/Projets?page=1&pageSize=50'),
+      api('/api/Roles/utilisateurs').catch(() => [])]);
     const ms = list(dm), ps = list(dp);
+    roles = {};
+    list(us).forEach(u => { roles[norm(u.email)] = u.roles || []; });
 
     // Pour chaque projet, en parallèle : ses tâches et son avancement.
     const res = await Promise.all(ps.map(p => Promise.all([

@@ -48,7 +48,7 @@ const ligneTache = t => `
 
 // Ligne de membre avec son nombre de tâches n.
 const ligneMembre = (m, n) => `
-  <a class="line" href="membre.html?id=${m.id}">
+  <a class="line" href="${memberUrl(m.id)}">
     ${icon(m.nom)}
     <div class="txt">
       <b>${esc(m.nom)}</b>
@@ -78,6 +78,20 @@ const avancement = f => f.forEach(async p => {
     peindre(p.id, avanc[p.id]);
   } catch {}
 });
+
+/* ---------- Pagination des colonnes (10 lignes par page, pagination commune) ---------- */
+
+const pg = {};   // page courante de chaque colonne, par clé
+
+// Remplit la colonne zone avec la page courante de f, ajoute les boutons et les branche.
+// Renvoie les éléments affichés (pour ne peindre l'avancement que des projets visibles).
+const colonne = (zone, cle, f, rendu, redessiner) => {
+  const r = paginer(f, 10, pg[cle]);
+  pg[cle] = r.page;
+  $(zone).innerHTML = carreaux(r.items, rendu) + r.html;
+  brancherPager($(zone), d => { pg[cle] += d; redessiner(); });
+  return r.items;
+};
 
 /* ---------- Initialisation : squelette de la page selon le rôle ---------- */
 
@@ -160,9 +174,8 @@ if (admin) {
     const q = norm($('#qM').value), p = $('#fMp').value;
     const f = membres.filter(m => norm(m.nom).includes(q)
       && (!p || taches.some(t => t.membreId === m.id && String(t.projetId) === p)));
-    $('#outM').innerHTML = f.length
-      ? carreaux(f, m => ligneMembre(m, taches.filter(t => t.membreId === m.id).length))
-      : tile(emptyBox('👥', membres.length
+    if (f.length) colonne('#outM', 'M', f, m => ligneMembre(m, taches.filter(t => t.membreId === m.id).length), drawM);
+    else $('#outM').innerHTML = tile(emptyBox('👥', membres.length
         ? 'Aucun membre ne correspond à votre recherche.'
         : 'Aucun membre trouvé.'));
   };
@@ -174,11 +187,10 @@ if (admin) {
     const f = projets.filter(p => norm(p.nom).includes(q)
       && (!m || taches.some(t => t.projetId === p.id && String(t.membreId) === m))
       && (!c || taches.some(t => t.projetId === p.id && norm(t.titre).includes(c))));
-    $('#outP').innerHTML = f.length ? carreaux(f, ligneProjet)
-      : tile(emptyBox('📁', projets.length
+    if (f.length) avancement(colonne('#outP', 'P', f, ligneProjet, drawP));
+    else $('#outP').innerHTML = tile(emptyBox('📁', projets.length
         ? 'Aucun projet ne correspond à votre recherche.'
         : 'Aucun projet trouvé.'));
-    avancement(f);
   };
 
   // Tâches : filtre par titre, par membre et par projet.
@@ -187,8 +199,8 @@ if (admin) {
     const q = norm($('#qT').value), m = $('#fTm').value, p = $('#fTp').value;
     const f = taches.filter(t => norm(t.titre).includes(q)
       && (!m || String(t.membreId) === m) && (!p || String(t.projetId) === p));
-    $('#outT').innerHTML = f.length ? carreaux(f, ligneTache)
-      : tile(emptyBox('🗂️', taches.length
+    if (f.length) colonne('#outT', 'T', f, ligneTache, drawT);
+    else $('#outT').innerHTML = tile(emptyBox('🗂️', taches.length
         ? 'Aucune tâche ne correspond à votre recherche.'
         : 'Aucune tâche trouvée.'));
   };
@@ -215,9 +227,10 @@ if (admin) {
   /* ----- Événements ----- */
 
   // Recherche et filtres : on redessine la colonne concernée.
-  $('#qM').oninput = $('#fMp').onchange = drawM;
-  $('#qP').oninput = $('#fPt').oninput = $('#fPm').onchange = drawP;
-  $('#qT').oninput = $('#fTm').onchange = $('#fTp').onchange = drawT;
+  // (un changement de recherche ou de filtre revient à la page 1 de la colonne)
+  $('#qM').oninput = $('#fMp').onchange = () => { pg.M = 1; drawM(); };
+  $('#qP').oninput = $('#fPt').oninput = $('#fPm').onchange = () => { pg.P = 1; drawP(); };
+  $('#qT').oninput = $('#fTm').onchange = $('#fTp').onchange = () => { pg.T = 1; drawT(); };
 
   // Nouveau projet : la page est rechargée entièrement après la création.
   $('#newP').onclick = () => modal('Nouveau projet', [
@@ -284,11 +297,10 @@ if (admin) {
     if (!projets) return;
     const q = norm($('#q').value);
     const f = projets.filter(p => norm(p.nom).includes(q));
-    $('#out').innerHTML = f.length ? carreaux(f, ligneProjet)
-      : tile(emptyBox('📁', projets.length
+    if (f.length) avancement(colonne('#out', 'mP', f, ligneProjet, draw));
+    else $('#out').innerHTML = tile(emptyBox('📁', projets.length
         ? 'Aucun projet ne correspond à votre recherche.'
         : 'Aucun projet trouvé.'));
-    avancement(f);
   };
 
   // Mes tâches, filtrées par titre.
@@ -296,8 +308,8 @@ if (admin) {
     if (!taches) return;
     const q = norm($('#qT').value);
     const f = taches.filter(t => norm(t.titre).includes(q));
-    $('#outT').innerHTML = f.length ? carreaux(f, ligneTache)
-      : tile(emptyBox('🗂️', taches.length
+    if (f.length) colonne('#outT', 'mT', f, ligneTache, drawT);
+    else $('#outT').innerHTML = tile(emptyBox('🗂️', taches.length
         ? 'Aucune tâche ne correspond à votre recherche.'
         : "Vous n'avez aucune tâche pour le moment."));
   };
@@ -305,13 +317,13 @@ if (admin) {
   /* ----- Événements et chargement ----- */
 
   // Colonne « Mes projets » : le serveur ne renvoie que les projets du membre connecté.
-  $('#q').oninput = draw;
+  $('#q').oninput = () => { pg.mP = 1; draw(); };
   api('/api/projets/mes-projets').then(d => { projets = list(d); draw(); })
     .catch(e => { $('#out').innerHTML = tile(emptyBox('⚠️', esc(e.message))); });
 
   // Colonne « Mes tâches » : on retrouve le membre connecté par son email
   // (le nom de la session), puis on charge ses tâches.
-  $('#qT').oninput = drawT;
+  $('#qT').oninput = () => { pg.mT = 1; drawT(); };
   api('/api/Membres?page=1&pageSize=50')
     .then(d => {
       const m = list(d).find(x => (x.email || '').toLowerCase() === session().name.toLowerCase());
