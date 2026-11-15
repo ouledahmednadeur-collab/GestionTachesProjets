@@ -30,10 +30,12 @@
     const souris = { x: -1e4, y: -1e4 };                     // très loin = pas de survol
     let curseur = '';
 
+    // Lit les couleurs du thème (variables CSS) : les engrenages suivent le mode clair / sombre.
     const lireCouleurs = () => {
       const s = getComputedStyle(document.documentElement), c = n => s.getPropertyValue(n).trim();
       coul = { dent: c('--line'), bord: c('--muted'), texte: c('--text'), accent: c('--accent') };
     };
+    // Les deux teintes du dégradé de colorOf(), au format du canvas.
     const teintes = nom => colorOf(nom).match(/hsl\([^)]*\)/g).map(c => c.replace(/\s+/g, ','));
 
     /* zone d'animation : mêmes seuils que le CSS (640 px et 900 px), sous le header de 60 px */
@@ -71,6 +73,8 @@
         g.a = g.t + Math.PI - Math.PI / g.n + (g.t - g.p.a) * g.p.n / g.n;
     };
 
+    // Adapte le canvas à la fenêtre et à la densité de pixels,
+    // puis replace les engrenages.
     const taille = () => {
       const dpr = Math.min(devicePixelRatio || 1, 2);        // plafonné à 2
       W = innerWidth; H = innerHeight;
@@ -90,10 +94,13 @@
       }
       ctx.closePath();
     };
+    // Cercle lumineux autour d'un engrenage (l'Admin, ou celui sous la souris).
     const halo = (g, alpha) => {
       ctx.beginPath(); ctx.arc(g.x, g.y, g.r + m + 6, 0, Math.PI * 2);
       ctx.globalAlpha = alpha; ctx.strokeStyle = coul.accent; ctx.lineWidth = 3; ctx.stroke(); ctx.globalAlpha = 1;
     };
+    // Dessine un engrenage : contour denté, disque central coloré, initiale (ou « Admin »),
+    // et son prénom quand la souris est dessus.
     const dessiner = (g, estAdmin, proche) => {
       ctx.save();
       if (proche) { ctx.translate(g.x, g.y); ctx.scale(1.08, 1.08); ctx.translate(-g.x, -g.y); }   // style seulement
@@ -140,16 +147,21 @@
       ctx.restore();
     };
 
+    /* ---------- 3. démarrage, boucle d'animation et événements ---------- */
+    // Premier calcul ; on recalcule si le thème ou la taille de la fenêtre change.
     lireCouleurs(); taille();
     matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { lireCouleurs(); if (reduit) rendu(0); });
     addEventListener('resize', () => { taille(); if (reduit) rendu(0); });
     if (reduit) { rendu(0); return; }                         // moins d'animations : image fixe, mais emboîtée
 
+    // Boucle d'animation : une image par rafraîchissement de l'écran (requestAnimationFrame).
     let last = 0, raf = 0;
+    // dt = temps écoulé depuis l'image précédente, plafonné à 50 ms (ex. après une pause).
     const frame = t => {
       const dt = last ? Math.min((t - last) / 1000, .05) : 0; last = t;
       rendu(dt); raf = requestAnimationFrame(frame);
     };
+    // (Re)lance la boucle ; arrêtée quand l'onglet est caché (économie de processeur).
     const demarrer = () => { last = 0; cancelAnimationFrame(raf); raf = requestAnimationFrame(frame); };
     document.addEventListener('visibilitychange', () => document.hidden ? cancelAnimationFrame(raf) : demarrer());
 
