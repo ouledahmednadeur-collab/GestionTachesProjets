@@ -262,7 +262,7 @@ function renderTop(active) {
   const s = session();
   const link = (href, txt, key) =>
     `<a href="${href}" class="${active === key ? 'on' : ''}">${txt}</a>`;
-  $('#nav').innerHTML = link('index.html', 'Projets', 'projets') +
+  $('#nav').innerHTML = link('projets.html', 'Projets', 'projets') +
     link('membres.html', 'Membres', 'membres') +
     (s?.admin ? link('roles.html', 'Rôles', 'roles') : '');
   $('#user').innerHTML = s
