@@ -16,14 +16,42 @@ let mode = 'login', premier = true;
 function draw() {
   const reg = mode === 'register';
   view(`<div class="auth panel auth-card${premier ? ' appear' : ''}">
-    <div class="auth-head"><span class="logo">✓</span><h1>Bienvenue</h1><p>Connectez-vous pour gérer vos projets et vos tâches</p></div>
-    <div class="tabs"><button class="${mode === 'login' ? 'on' : ''}" data-m="login">Connexion</button><button class="${mode === 'register' ? 'on' : ''}" data-m="register">Inscription</button></div>
-    <form id="f">${reg ? '<label>Nom</label><div class="field"><span>👤</span><input name ="nom" required></div>' : ''}<label>Email</label><div class="field"><span>✉️</span><input name="email" type="email" required autocomplete="username" value="${mode === 'login' ? 'admin@test.com' : ''}"></div>
-      <label>Mot de passe</label><div class="field"><span>🔒</span><input name="password" type="password" required autocomplete="current-password" value="${mode === 'login' ? 'Admin123!' : ''}"></div>
-      <button class="btn primary" style="width:100%;margin-top:20px">${mode === 'login' ? 'Se connecter' : 'Créer mon compte'}</button></form>
+    <div class="auth-head">
+      <span class="logo">✓</span>
+      <h1>Bienvenue</h1>
+      <p>Connectez-vous pour gérer vos projets et vos tâches</p>
+    </div>
+
+    <div class="tabs">
+      <button class="${mode === 'login' ? 'on' : ''}" data-m="login">Connexion</button>
+      <button class="${mode === 'register' ? 'on' : ''}" data-m="register">Inscription</button>
+    </div>
+
+    <form id="f">
+      ${reg ? '<label>Nom</label><div class="field"><span>👤</span><input name ="nom" required></div>' : ''}
+      <label>Email</label>
+      <div class="field">
+        <span>✉️</span>
+        <input name="email" type="email" required autocomplete="username"
+          value="${mode === 'login' ? 'admin@test.com' : ''}">
+      </div>
+      <label>Mot de passe</label>
+      <div class="field">
+        <span>🔒</span>
+        <input name="password" type="password" required autocomplete="current-password"
+          value="${mode === 'login' ? 'Admin123!' : ''}">
+      </div>
+      <button class="btn primary" style="width:100%;margin-top:20px">${
+        mode === 'login' ? 'Se connecter' : 'Créer mon compte'}</button>
+    </form>
+
     <p class="ferr" id="ferr" role="alert"></p>
-    <p class="switch">${reg ? 'Déjà un compte ?' : 'Pas encore de compte ?'} <button type="button" class="linkbtn" data-m="${reg ? 'login' : 'register'}">${reg ? 'Se connecter' : 'Créer un compte'}</button></p>
-    <p style="color:var(--muted);font-size:13px;margin:16px 0 0;text-align:center">Compte de démonstration : admin@test.com / Admin123!</p></div>`);
+    <p class="switch">${reg ? 'Déjà un compte ?' : 'Pas encore de compte ?'}
+      <button type="button" class="linkbtn" data-m="${reg ? 'login' : 'register'}">${
+        reg ? 'Se connecter' : 'Créer un compte'}</button>
+    </p>
+    <p style="color:var(--muted);font-size:13px;margin:16px 0 0;text-align:center">Compte de démonstration : admin@test.com / Admin123!</p>
+  </div>`);
   premier = false;
 
   // Onglets et lien du bas : changent de mode puis redessinent.
