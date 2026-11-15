@@ -44,7 +44,8 @@ const initials = n => String(n || '?').trim().split(/\s+/).slice(0, 2)
 
 // Icône colorée avec les initiales ; big = grande version des pages de détail.
 const icon = (n, big) =>
-  `<div class="icon ${big ? 'big' : ''}" style="background:${colorOf(n)}">${esc(initials(n))}</div>`;
+  `<div class="icon ${big ? 'big' : ''}"
+    style="background:${colorOf(n)}">${esc(initials(n))}</div>`;
 
 // Remplace tout le contenu principal de la page (<main id="app">).
 const view = html => { $('#app').innerHTML = html; };
@@ -53,7 +54,10 @@ const view = html => { $('#app').innerHTML = html; };
 const skeleton = n => `<div class="grid">${'<div class="skeleton"></div>'.repeat(n)}</div>`;
 
 // Message centré « rien à afficher » ou « erreur » (e = emoji, t = texte).
-const emptyBox = (e, t) => `<div class="empty"><div class="big">${e}</div><p>${t}</p></div>`;
+const emptyBox = (e, t) => `<div class="empty">
+    <div class="big">${e}</div>
+    <p>${t}</p>
+  </div>`;
 
 // Normalise pour la recherche : minuscules et sans accents ("Tâche" -> "tache").
 const norm = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -61,7 +65,10 @@ const norm = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '
 
 // Barre de recherche commune à toutes les pages.
 const bar = (id, ph = 'Rechercher par nom…') =>
-  `<div class="search"><span>🔍</span><input id="${id}" placeholder="${ph}" autocomplete="off"></div>`;
+  `<div class="search">
+    <span>🔍</span>
+    <input id="${id}" placeholder="${ph}" autocomplete="off">
+  </div>`;
 
 // Range les éléments par carreaux de 4 lignes (fn = rendu d'une ligne).
 const carreaux = (arr, fn) => {
@@ -75,7 +82,8 @@ const carreaux = (arr, fn) => {
 const tile = html => `<div class="tile">${html}</div>`;
 
 // Barre d'avancement + « 33,3 % terminé » ; rien si v est null (avancement inconnu).
-const avHtml = v => v == null ? '' : `<div class="bar${v >= 100 ? ' done' : ''}"><i style="width:${v}%"></i></div>
+const avHtml = v => v == null ? '' : `
+  <div class="bar${v >= 100 ? ' done' : ''}"><i style="width:${v}%"></i></div>
   <span class="sub">${v.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} % terminé</span>`;
 
 // Petit message temporaire en bas de l'écran (err = version rouge pour les erreurs).
@@ -209,13 +217,24 @@ function modal(title, fields, onOk, okLabel = 'Enregistrer') {
   const m = document.createElement('div');
   m.className = 'modal';
   // Un champ par entrée de fields : textarea, select ou input selon f.type.
-  m.innerHTML = `<form class="box"><h3>${esc(title)}</h3>${fields.map(f => `
-    <label>${esc(f.label)}</label>
-    ${f.type === 'textarea' ? `<textarea name="${f.name}" rows="3">${esc(f.value || '')}</textarea>`
-      : f.type === 'select' ? `<select name="${f.name}" ${f.required ? 'required' : ''}>${(f.options || []).map(o =>
-          `<option value="${esc(o.value)}" ${String(o.value) === String(f.value ?? '') ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select>`
-      : `<input name="${f.name}" type="${f.type || 'text'}" value="${esc(f.value || '')}" ${f.required ? 'required' : ''}>`}`).join('')}
-    <div class="foot"><button type="button" class="btn" data-x>Annuler</button><button class="btn primary">${esc(okLabel)}</button></div></form>`;
+  m.innerHTML = `<form class="box">
+    <h3>${esc(title)}</h3>
+    ${fields.map(f => `
+      <label>${esc(f.label)}</label>
+      ${f.type === 'textarea'
+        ? `<textarea name="${f.name}" rows="3">${esc(f.value || '')}</textarea>`
+        : f.type === 'select'
+          ? `<select name="${f.name}" ${f.required ? 'required' : ''}>
+              ${(f.options || []).map(o => `<option value="${esc(o.value)}"
+                ${String(o.value) === String(f.value ?? '') ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}
+            </select>`
+          : `<input name="${f.name}" type="${f.type || 'text'}" value="${esc(f.value || '')}"
+              ${f.required ? 'required' : ''}>`}`).join('')}
+    <div class="foot">
+      <button type="button" class="btn" data-x>Annuler</button>
+      <button class="btn primary">${esc(okLabel)}</button>
+    </div>
+  </form>`;
   document.body.appendChild(m);
 
   // Fermeture : clic sur le fond gris ou sur « Annuler » (attribut data-x).
@@ -247,7 +266,9 @@ function renderTop(active) {
     link('membres.html', 'Membres', 'membres') +
     (s?.admin ? link('roles.html', 'Rôles', 'roles') : '');
   $('#user').innerHTML = s
-    ? `<span class="badge ${s.admin ? 'admin' : ''}">${esc(s.roles.join(' & ') || 'Aucun Role')}</span><button class="btn small" id="logout">Déconnexion</button><span class="mail">${esc(s.name)}</span>`
+    ? `<span class="badge ${s.admin ? 'admin' : ''}">${esc(s.roles.join(' & ') || 'Aucun Role')}</span>
+      <button class="btn small" id="logout">Déconnexion</button>
+      <span class="mail">${esc(s.name)}</span>`
     : `<a class="btn primary small" href="login.html">Connexion</a>`;
   // Déconnexion : il suffit d'oublier le token (le JWT n'est pas stocké côté serveur).
   const lo = $('#logout');
