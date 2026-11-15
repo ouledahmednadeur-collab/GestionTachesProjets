@@ -49,6 +49,7 @@ La base SQLite (`projettaches.db`) est créée, migrée et remplie automatiqueme
 | nadeur@test.com | Membre | `Nadeur1234!` |
 
 Les autres membres suivent la règle `prénom@test.com` / `Prénom1234!` (par exemple `ameni@test.com` / `Ameni1234!`). Ces mots de passe sont des valeurs de démonstration.
+En plus du rôle « Membre », chaque membre a un rôle métier (affichage seulement, sans droit supplémentaire) : Ingénieur sécurité, Pentester, Analyste SOC, Analyste malware, Ingénieur réseau ou Responsable projet.
 
 ## Architecture
 
