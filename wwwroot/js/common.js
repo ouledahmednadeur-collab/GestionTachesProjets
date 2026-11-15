@@ -275,6 +275,7 @@ function renderTop(active) {
     `<a href="${href}" class="${active === key ? 'on' : ''}">${txt}</a>`;
   $('#nav').innerHTML = link('projets.html', 'Projets', 'projets') +
     link('membres.html', 'Membres', 'membres') +
+    link('taches.html', 'Tâches', 'taches') +
     (s?.admin ? link('roles.html', 'Rôles', 'roles')
       + link('commentaires.html', 'Commentaires', 'commentaires') : '');
   $('#user').innerHTML = s

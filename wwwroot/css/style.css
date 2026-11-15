@@ -978,3 +978,24 @@ html.with-loader .auth-card.appear {
     animation: none;
   }
 }
+
+/* ==================================================================
+   Page Tâches : membre affecté sur une carte (pastille à initiale + nom)
+   ================================================================== */
+.tache-membre {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.mini-av {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
