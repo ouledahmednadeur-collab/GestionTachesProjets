@@ -10,36 +10,52 @@
 const admin = session().admin;
 
 // Liste déroulante compacte de filtre ; ses options sont ajoutées après le chargement.
-const choix = (id, label) =>
-  `<label class="fsel"><span>${label}</span><select id="${id}"><option value="">Tous</option></select></label>`;
+const choix = (id, label) => `<label class="fsel">
+    <span>${label}</span>
+    <select id="${id}"><option value="">Tous</option></select>
+  </label>`;
 
 // Bandeau de titre commun aux deux vues.
-const hero = `<section class="hero"><h1>Gérez vos projets simplement</h1>
-  <p>Suivez l'avancement, répartissez les tâches et échangez avec votre équipe.</p></section>`;
+const hero = `<section class="hero">
+    <h1>Gérez vos projets simplement</h1>
+    <p>Suivez l'avancement, répartissez les tâches et échangez avec votre équipe.</p>
+  </section>`;
 
 /* ---------- Rendu d'une ligne (projet, tâche, membre) ---------- */
 
 // Ligne de projet ; sa barre d'avancement est remplie plus tard par peindre().
 const ligneProjet = p => `
-    <a class="line" href="projet.html?id=${p.id}">${icon(p.nom)}
-      <div class="txt"><b>${esc(p.nom)}</b><div class="bar" data-av="${p.id}"><i></i></div>
-      <div class="sub">${esc(p.description || 'Aucune description')}</div></div>
-      <span class="end" data-avt="${p.id}">…</span>
-    </a>`;
+  <a class="line" href="projet.html?id=${p.id}">
+    ${icon(p.nom)}
+    <div class="txt">
+      <b>${esc(p.nom)}</b>
+      <div class="bar" data-av="${p.id}"><i></i></div>
+      <div class="sub">${esc(p.description || 'Aucune description')}</div>
+    </div>
+    <span class="end" data-avt="${p.id}">…</span>
+  </a>`;
 
 // Ligne de tâche avec son statut.
 const ligneTache = t => `
-        <a class="line" href="tache.html?id=${t.id}">${icon(t.titre)}
-          <div class="txt"><b>${esc(t.titre)}</b><div class="sub">Projet ${t.projetId} · #${t.id}</div></div>
-          <span class="st ${t.statut}">${STATUTS[t.statut] || esc(t.statut)}</span>
-        </a>`;
+  <a class="line" href="tache.html?id=${t.id}">
+    ${icon(t.titre)}
+    <div class="txt">
+      <b>${esc(t.titre)}</b>
+      <div class="sub">Projet ${t.projetId} · #${t.id}</div>
+    </div>
+    <span class="st ${t.statut}">${STATUTS[t.statut] || esc(t.statut)}</span>
+  </a>`;
 
 // Ligne de membre avec son nombre de tâches n.
 const ligneMembre = (m, n) => `
-    <a class="line" href="membre.html?id=${m.id}">${icon(m.nom)}
-      <div class="txt"><b>${esc(m.nom)}</b><div class="sub">${esc(m.email)}</div></div>
-      <span class="end">${n} tâche${n > 1 ? 's' : ''}</span>
-    </a>`;
+  <a class="line" href="membre.html?id=${m.id}">
+    ${icon(m.nom)}
+    <div class="txt">
+      <b>${esc(m.nom)}</b>
+      <div class="sub">${esc(m.email)}</div>
+    </div>
+    <span class="end">${n} tâche${n > 1 ? 's' : ''}</span>
+  </a>`;
 
 /* ---------- Avancement des projets ---------- */
 
@@ -67,22 +83,60 @@ const avancement = f => f.forEach(async p => {
 
 view(admin
   ? hero + `<div class="trio">
-    <section class="col"><div class="sec"><h2>Membres</h2><div class="actions"><button class="btn primary" id="newM">+ Nouveau membre</button></div></div>
-      ${bar('qM')}<div class="frow">${choix('fMp', 'Projet')}</div>
-      <div id="outM">${skeleton(1)}</div></section>
+    <section class="col">
+      <div class="sec">
+        <h2>Membres</h2>
+        <div class="actions"><button class="btn primary" id="newM">+ Nouveau membre</button></div>
+      </div>
+      ${bar('qM')}
+      <div class="frow">${choix('fMp', 'Projet')}</div>
+      <div id="outM">${skeleton(1)}</div>
+    </section>
+
     <div class="vsep"></div>
-    <section class="col"><div class="sec"><h2>Projets</h2><div class="actions"><button class="btn primary" id="newP">+ Nouveau projet</button></div></div>
-      ${bar('qP')}<div class="frow">${choix('fPm', 'Membre')}<input id="fPt" placeholder="Contient la tâche…" autocomplete="off"></div>
-      <div id="outP">${skeleton(1)}</div></section>
+
+    <section class="col">
+      <div class="sec">
+        <h2>Projets</h2>
+        <div class="actions"><button class="btn primary" id="newP">+ Nouveau projet</button></div>
+      </div>
+      ${bar('qP')}
+      <div class="frow">
+        ${choix('fPm', 'Membre')}
+        <input id="fPt" placeholder="Contient la tâche…" autocomplete="off">
+      </div>
+      <div id="outP">${skeleton(1)}</div>
+    </section>
+
     <div class="vsep"></div>
-    <section class="col"><div class="sec"><h2>Tâches</h2><div class="actions"><button class="btn primary" id="newT">+ Nouvelle tâche</button></div></div>
-      ${bar('qT')}<div class="frow">${choix('fTm', 'Membre')}${choix('fTp', 'Projet')}</div>
-      <div id="outT">${skeleton(1)}</div></section>
+
+    <section class="col">
+      <div class="sec">
+        <h2>Tâches</h2>
+        <div class="actions"><button class="btn primary" id="newT">+ Nouvelle tâche</button></div>
+      </div>
+      ${bar('qT')}
+      <div class="frow">
+        ${choix('fTm', 'Membre')}
+        ${choix('fTp', 'Projet')}
+      </div>
+      <div id="outT">${skeleton(1)}</div>
+    </section>
   </div>`
   : hero + `<div class="duo">
-    <section class="col"><div class="sec"><h2>Mes projets</h2></div>${bar('q')}<div id="out">${skeleton(1)}</div></section>
+    <section class="col">
+      <div class="sec"><h2>Mes projets</h2></div>
+      ${bar('q')}
+      <div id="out">${skeleton(1)}</div>
+    </section>
+
     <div class="vsep"></div>
-    <section class="col"><div class="sec"><h2>Mes tâches</h2></div>${bar('qT')}<div id="outT">${skeleton(1)}</div></section>
+
+    <section class="col">
+      <div class="sec"><h2>Mes tâches</h2></div>
+      ${bar('qT')}
+      <div id="outT">${skeleton(1)}</div>
+    </section>
   </div>`);
 
 if (admin) {
