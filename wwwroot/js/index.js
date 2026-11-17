@@ -86,7 +86,7 @@ const pg = {};   // page courante de chaque colonne, par clé
 // Remplit la colonne zone avec la page courante de f, ajoute les boutons et les branche.
 // Renvoie les éléments affichés (pour ne peindre l'avancement que des projets visibles).
 const colonne = (zone, cle, f, rendu, redessiner) => {
-  const r = paginer(f, 10, pg[cle]);
+  const r = paginer(f, PAGE_SIZE, pg[cle]);
   pg[cle] = r.page;
   $(zone).innerHTML = carreaux(r.items, rendu) + r.html;
   brancherPager($(zone), d => { pg[cle] += d; redessiner(); });
@@ -243,14 +243,19 @@ if (admin) {
     });
 
   // Nouveau membre.
-  $('#newM').onclick = () => modal('Nouveau membre', [
+  // Nouveau membre avec son compte de connexion (erreurs 400 / 409 de l'API : toast).
+  $('#newM').onclick = () => { modal('Nouveau membre', [
     { name: 'nom', label: 'Nom', required: true },
-    { name: 'email', label: 'Email', type: 'email', required: true }],
+    { name: 'email', label: 'Email', type: 'email', required: true },
+    { name: 'password', label: 'Mot de passe', type: 'password', required: true }],
     async d => {
       await api('/api/Membres', 'POST', d);
       toast('Membre ajouté');
       actualiser();
     });
+    // champ mot de passe : bouton Afficher / Masquer et phrase d'aide
+    brancherMotDePasse('Le membre se connectera avec cet email et ce mot de passe.');
+  };
 
   // Nouvelle tâche : création, puis affectation si un membre est choisi.
   $('#newT').onclick = () => modal('Nouvelle tâche', [

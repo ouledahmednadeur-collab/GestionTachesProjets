@@ -141,7 +141,7 @@ function donut(st) {
 // Avancement par projet : une barre par projet, cliquable vers le projet.
 function dessinProjets(st) {
   if (!st.avProjets.length) return vide('Aucune donnée');
-  const r = pageDe('projets', st.avProjets, 10);
+  const r = pageDe('projets', st.avProjets, PAGE_SIZE);
   return r.items.map(x => `<a href="projet.html?id=${x.p.id}">${barre(esc(x.p.nom),
       `${fr(x.v)} % · ${x.n} tâche${x.n > 1 ? 's' : ''}`,
       [{ pct: x.v, coul: x.v >= 100 ? 'var(--ok)' : 'var(--accent)' }],
@@ -153,7 +153,7 @@ function dessinMembres(st) {
   if (!st.charge) return indispo;
   if (!st.charge.length) return vide('Aucune donnée');
   const max = st.charge[0].n;   // échelle commune à toutes les pages
-  const r = pageDe('membres', st.charge, 10);
+  const r = pageDe('membres', st.charge, PAGE_SIZE);
   return r.items.map(x => barre(memberLink(x.m.id, esc(x.m.nom))
     + (x.m.id === moiId ? ' <span class="badge vous">Vous</span>' : ''), `${x.fini} / ${x.n}`, [
     { pct: x.fini * 100 / max, coul: 'var(--ok)', titre: `${x.m.nom} : ${x.fini} terminée(s)` },
@@ -166,7 +166,7 @@ function dessinRoles(st) {
   if (!st.parRole) return indispo;
   const max = Math.max(...st.parRole.map(x => x.n));
   if (!max) return vide('Aucune donnée');
-  const r = pageDe('roles', st.parRole, 10);
+  const r = pageDe('roles', st.parRole, PAGE_SIZE);
   return r.items.map(x => barre(esc(x.r), x.n,
     [{ pct: x.n * 100 / max, coul: 'var(--accent)' }], `${x.r} : ${x.n} tâche(s)`)).join('') + r.html;
 }

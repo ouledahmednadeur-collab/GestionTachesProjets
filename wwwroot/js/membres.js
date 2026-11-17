@@ -14,7 +14,7 @@ const pagesM1 = () => { pagesM.page = 1; pagesM.sec = {}; };
 // Sections paginées : rend chaque section avec rendu(section, membresDeLaPage, pagerMembres)
 // puis la pagination des sections, et branche tous les boutons (redessin par draw).
 function sectionsPaginees(liste, cle, rendu, draw) {
-  const r = paginer(liste, 6, pagesM.page);
+  const r = paginer(liste, PAGE_SIZE, pagesM.page);
   pagesM.page = r.page;
   setTimeout(() => {
     brancherPager($('#pgSections'), d => { pagesM.page += d; draw(); });
@@ -22,7 +22,7 @@ function sectionsPaginees(liste, cle, rendu, draw) {
       brancherPager(z, d => { pagesM.sec[z.dataset.sec] += d; draw(); }));
   });
   return r.items.map(x => {
-    const k = cle(x), pm = paginer(x.liste, 10, pagesM.sec[k]);
+    const k = cle(x), pm = paginer(x.liste, PAGE_SIZE, pagesM.sec[k]);
     pagesM.sec[k] = pm.page;
     return rendu(x, pm, k);
   }).join('') + `<div id="pgSections">${r.html}</div>`;
@@ -157,14 +157,19 @@ async function load() {
   /* ----- Événements ----- */
 
   // Nouveau membre.
-  $('#newM').onclick = () => modal('Nouveau membre', [
+  // Nouveau membre avec son compte de connexion (erreurs 400 / 409 de l'API : toast).
+  $('#newM').onclick = () => { modal('Nouveau membre', [
     { name: 'nom', label: 'Nom', required: true },
-    { name: 'email', label: 'Email', type: 'email', required: true }],
+    { name: 'email', label: 'Email', type: 'email', required: true },
+    { name: 'password', label: 'Mot de passe', type: 'password', required: true }],
     async d => {
       await api('/api/Membres', 'POST', d);
       toast('Membre ajouté');
       load();
     });
+    // champ mot de passe : bouton Afficher / Masquer et phrase d'aide
+    brancherMotDePasse('Le membre se connectera avec cet email et ce mot de passe.');
+  };
 
   $('#q').oninput = () => { pagesM1(); draw(); };   // recherche : retour à la page 1
 

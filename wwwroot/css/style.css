@@ -1782,14 +1782,87 @@ a:hover .stat-nom {
   background: rgba(150,120,230,.16);
   color: color-mix(in srgb,#7c5cd6 70%,var(--text));
 }
-/* la zone utilisateur garde sa place ; si les liens manquent de place, ils défilent */
+/* ==================================================================
+   Barre du haut élargie (seule la barre : le contenu des pages garde sa largeur),
+   liens sur UNE ligne sans défilement ; ce qui ne tient pas passe dans « Plus ▾ »,
+   et sous 700 px tous les liens passent dans « Menu » (voir ajusterNav() dans common.js)
+   ================================================================== */
+.top .wrap {
+  max-width: 1600px;
+  padding: 0 28px;
+}
 .user {
   flex: none;
+  margin-left: auto;   /* cloche + utilisateur + Déconnexion poussés à droite */
 }
 .top nav {
+  flex: 1;
   min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
+  overflow: hidden;    /* aucun défilement : le surplus part dans « Plus » */
+  flex-wrap: nowrap;
+  align-items: center;
+}
+.top nav a {
+  flex: none;
+  white-space: nowrap;
+}
+/* moins de place : espacements réduits avant de replier des liens */
+@media (max-width: 1280px) {
+  .top .wrap {
+    gap: 12px;
+    padding: 0 18px;
+  }
+  .top nav a {
+    padding: 7px 9px;
+  }
+}
+/* menu « Plus ▾ » / « Menu » : même style que le panneau de la cloche */
+.nav-plus {
+  flex: none;
+}
+.nav-plus-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 11px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.nav-plus-btn:hover,
+.nav-plus-btn[aria-expanded="true"],
+.nav-plus-btn.on {
+  background: color-mix(in srgb,var(--accent) 14%,transparent);
+  color: var(--accent);
+}
+.nav-plus-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+.nav-menu {
+  position: fixed;     /* hors de la barre (qui coupe ce qui dépasse) */
+  z-index: 40;
+  min-width: 200px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+}
+.nav-menu[hidden] {
+  display: none;
+}
+.nav-menu a {
+  padding: 8px 12px;
 }
 /* écran étroit : seulement l'avatar (email et rôles visibles au survol via title) */
 @media (max-width: 800px) {
@@ -1798,20 +1871,24 @@ a:hover .stat-nom {
   }
   .user {
     gap: 10px;
-    margin-left: auto;
   }
-  /* liens sur une seconde ligne, défilant horizontalement si besoin */
+}
+@media (max-width: 699px) {
   .top .wrap {
-    flex-wrap: wrap;
-    height: auto;
-    row-gap: 4px;
-    padding-top: 8px;
-    padding-bottom: 6px;
+    gap: 8px;
+    padding: 0 12px;
   }
-  .top nav {
-    order: 3;
-    flex: 1 0 100%;
+  .brand {
+    font-size: 15px;
   }
+}
+/* petit engrenage décoratif à côté du logo (vitesse pilotée par common.js) */
+.nav-gear {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  fill: color-mix(in srgb,var(--accent) 60%,transparent);
+  pointer-events: none;
 }
 
 /* ==================================================================
@@ -1995,4 +2072,381 @@ a:hover .stat-nom {
   .bulle {
     max-width: 90%;
   }
+}
+
+/* Page Tâche : auteur fixe d'un commentaire (membre non admin) — avatar comme dans les commentaires */
+.auteur-puce {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.auteur-puce .icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+.auteur-puce b {
+  color: var(--text);
+}
+
+/* ==================================================================
+   Notifications : cloche de la barre, panneau déroulant, page notifications.html
+   ================================================================== */
+.cloche-zone {
+  position: relative;
+}
+.cloche {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.cloche:hover,
+.cloche[aria-expanded="true"] {
+  background: var(--surface2);
+  color: var(--text);
+}
+.cloche svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+.cloche .nav-badge {
+  position: absolute;
+  top: 1px;
+  right: 0;
+  margin: 0;
+}
+.notif-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 40;
+  width: min(360px,calc(100vw - 32px));
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  color: var(--text);
+}
+.notif-tete,
+.notif-pied {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 6px 8px;
+}
+.notif-pied {
+  justify-content: center;
+  padding: 10px 6px 4px;
+  border-top: 1px solid var(--line);
+  margin-top: 6px;
+}
+.notif {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 6px;
+  border-radius: 10px;
+  cursor: pointer;
+  flex: 1;
+  min-width: 0;
+}
+.notif:hover,
+.notif:focus {
+  background: var(--surface2);
+  outline: none;
+}
+.notif-ico {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+}
+.notif-ico svg {
+  width: 17px;
+  height: 17px;
+  fill: currentColor;
+}
+.notif-ico.msg {
+  background: color-mix(in srgb,var(--accent) 16%,transparent);
+  color: var(--accent);
+}
+.notif-ico.tache {
+  background: color-mix(in srgb,var(--ok) 18%,transparent);
+  color: var(--ok);
+}
+.notif-txt {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13.5px;
+  overflow-wrap: anywhere;
+}
+.notif-txt .sub {
+  color: var(--muted);
+  font-size: 12px;
+}
+/* non lue : la pastille bleue suffit, le texte reste normal pour que l'auteur (en gras) ressorte */
+.notif.non-lue .notif-txt > span:first-child {
+  color: var(--text);
+}
+.notif-point {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+/* page notifications.html */
+.notif-ligne {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-top: 1px solid var(--line);
+  padding: 4px 0;
+}
+.notif-ligne:first-child {
+  border-top: 0;
+}
+/* notification « tâche ajoutée » : icône « + » violet doux */
+.notif-ico.ajout {
+  background: rgba(150,120,230,.16);
+  color: color-mix(in srgb,#7c5cd6 75%,var(--text));
+}
+.notif-txt b {
+  font-weight: 700;
+}
+
+/* Page Rôles : privilèges d'un rôle (pastilles du bloc et cases de la fenêtre) */
+.priv-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 2px 0 4px;
+}
+.priv-case {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 10px 0 0;
+  font-weight: 400;
+  cursor: pointer;
+}
+.priv-case input {
+  width: auto;
+  margin-top: 3px;
+}
+.priv-case > span {
+  display: flex;
+  flex-direction: column;
+}
+.priv-case .sub {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* Page Rôles : rôle sans membre dans le projet choisi (une seule ligne, sans cadre vide) */
+.role-compact {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+.role-compact .icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+.role-compact .priv-pills {
+  margin: 0;
+}
+/* formulaire « Créer un rôle » : section repliable des privilèges */
+.priv-creation {
+  margin-top: 12px;
+}
+.priv-creation summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 14px;
+}
+/* ==================================================================
+   Rôles par projet : pastilles « rôle · projet » de la barre du haut, « +N » et son panneau,
+   pastilles de rôle des cartes et des pages projet, tâche et profil
+   ================================================================== */
+a.role-pill {
+  text-decoration: none;
+}
+.role-projet {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.roles-plus-zone {
+  position: relative;
+}
+.roles-plus {
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+.roles-plus-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  width: max-content;
+  max-width: min(320px,calc(100vw - 32px));
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  font-size: 13px;
+}
+.roles-plus-panel[hidden] {
+  display: none;
+}
+.roles-plus-panel .role-projet {
+  max-width: 100%;
+  white-space: normal;
+  border-radius: 8px;
+  padding: 2px 8px;
+}
+/* bloc « Votre rôle dans ce projet » / « Mes rôles et privilèges » */
+.mes-droits {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.mes-droits .priv-libelle {
+  font-size: 12.5px;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0 8px;
+  cursor: help;
+}
+.droits-projet {
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+.droits-projet:first-of-type {
+  border-top: 0;
+}
+.droits-projet > a {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+/* barre du haut : pastilles « rôle · projet » plus courtes (texte complet au survol) */
+.user-roles .role-projet {
+  max-width: 150px;
+}
+/* page projet : ligne « Votre rôle / Privilèges » sous la barre d'avancement ; les pastilles
+   passent à la ligne sur écran étroit sans dépasser du bloc */
+.detail-head .mes-droits {
+  min-width: 0;
+  max-width: 100%;
+}
+.detail-head .mes-droits .role-pill,
+.detail-head .mes-droits .priv-libelle {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* pastilles de rôle cliquables (barre du haut, page projet) : ouvrent « Mes privilèges » */
+button.role-pill {
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+button.role-pill:hover {
+  filter: brightness(.95);
+  text-decoration: underline;
+}
+#mesPrivs {
+  margin: 4px 0 8px;
+}
+.panneau-privs {
+  max-height: 80vh;
+  overflow-y: auto;
+}
+.privs-liste {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+.privs-liste li {
+  margin-bottom: 6px;
+}
+.privs-liste .sub {
+  display: block;
+}
+/* champ mot de passe avec bouton Afficher / Masquer (fenêtre « Nouveau membre ») */
+.mdp-zone {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.mdp-zone input {
+  flex: 1;
+  min-width: 0;
+}
+.mdp-aide {
+  margin: 6px 0 0;
+}
+/* profil, bloc Admin « Gérer ce membre » : badges de rôle avec ×, ajout d'un rôle */
+.gestion-titre {
+  margin: 16px 0 4px;
+  font-size: 14px;
+}
+.pill-x {
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  padding: 0 0 0 4px;
+}
+.pill-x:hover {
+  color: var(--danger, #d33);
+}
+.gestion-ajout {
+  margin-top: 8px;
+  flex-wrap: nowrap;
+}
+.gestion-ajout select {
+  flex: 1;
+  min-width: 0;
+}
+[data-nouvelle][hidden] {
+  display: none;
 }

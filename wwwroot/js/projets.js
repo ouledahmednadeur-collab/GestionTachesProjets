@@ -9,7 +9,7 @@
 /* ---------- Constantes et état de la page ---------- */
 
 const admin = session().admin;
-const SIZE = 9;          // nombre de projets par page
+const SIZE = PAGE_SIZE;  // nombre de projets par page (constante commune)
 let page = 1;            // page courante
 let tous = null;         // tous les projets, chargés seulement si nécessaire (null = pas encore)
 
@@ -50,13 +50,16 @@ const details = p => Promise.all([
 /* ---------- Rendu ---------- */
 
 // Carreau d'un projet (mêmes classes que les cartes de tâches de projet.js).
-const carte = (p, [n, v]) => `
+// d = mes droits (mesDroits()) : pastille de mon rôle dans ce projet, s'il y en a un.
+const carte = (p, [n, v], d) => `
   <a class="card" href="projet.html?id=${p.id}">
     <div class="head">
       ${icon(p.nom)}
       <div>
         <h3>${esc(p.nom)}</h3>
         <span class="sub">${n == null ? '' : `${n} tâche${n > 1 ? 's' : ''}`}</span>
+        ${droitsProjet(d, p.id).roles.map(r => `<span class="role-pill metier"
+          title="${esc(survolPrivileges(droitsProjet(d, p.id).privileges))}">${esc(r)}</span>`).join(' ')}
       </div>
     </div>
     <div class="desc">${esc(p.description || 'Aucune description')}</div>
@@ -70,12 +73,12 @@ async function draw() {
   $('#out').innerHTML = skeleton(3);
   try {
     const { items, tot } = await pageCourante(q);
-    const infos = await Promise.all(items.map(details));
+    const [infos, d] = await Promise.all([Promise.all(items.map(details)), mesDroits()]);
     if (moi !== tour) return;
     const pages = Math.max(1, Math.ceil(tot / SIZE));
 
     $('#out').innerHTML = items.length
-      ? `<div class="grid">${items.map((p, i) => carte(p, infos[i])).join('')}</div>
+      ? `<div class="grid">${items.map((p, i) => carte(p, infos[i], d)).join('')}</div>
         ${pages > 1 ? `<div class="pager">
           <button class="btn" id="prev" ${page <= 1 ? 'disabled' : ''}>← Précédent</button>
           <span>Page ${page} / ${pages}</span>

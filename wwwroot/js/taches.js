@@ -11,7 +11,7 @@
 /* ---------- Constantes et état de la page ---------- */
 
 const s = session(), admin = !!s?.admin;
-const SIZE = 12;   // nombre de tâches par page
+const SIZE = PAGE_SIZE;   // nombre de tâches par page (constante commune)
 let page = 1;      // page courante (de l'affichage filtré)
 
 // taches = null : pas encore chargé ; projets = nom par id ; roles = rôles par email normalisé.

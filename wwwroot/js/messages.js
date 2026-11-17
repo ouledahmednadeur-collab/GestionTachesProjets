@@ -4,23 +4,31 @@
  * à droite : la discussion choisie en bulles, l'historique par pages et la saisie.
  * L'expéditeur n'est jamais envoyé : le backend le déduit du token. Tout texte est
  * échappé avec esc() avant d'être inséré dans la page.
+ * L'Admin (compte sans fiche Membre) participe avec l'identifiant 0, affiché « Administrateur »
+ * avec un badge Admin : un membre peut lui écrire, et l'Admin peut écrire à tout membre.
  * ===================================================================== */
 
 /* ---------- État de la page ---------- */
 
 const s = session();
 const TAILLE = 20;        // messages par page d'historique
-let moiId = null;         // ma fiche Membre
+const ADMIN_ID = 0;       // identifiant de l'Administrateur dans l'API des messages
+let moiId = null;         // ma fiche Membre (ADMIN_ID pour l'Admin)
 let membres = [];         // tous les membres (noms, nouveau message)
 let convs = [];           // mes conversations (résumés)
 let pageConvs = 1;        // page de la liste des conversations
-let avec = +param('avec') || null;   // interlocuteur de la discussion ouverte
+// interlocuteur de la discussion ouverte (?avec=0 : l'Administrateur)
+let avec = param('avec') ? +param('avec') : null;
 let msgs = [], totalMsgs = 0, pagesChargees = 0;   // discussion ouverte
 
 /* ---------- Petits rendus ---------- */
 
 const ligneVide = t => `<p class="stat-vide">${t}</p>`;
-const nomDe = id => membres.find(m => m.id === id)?.nom || 'Membre ' + id;
+const nomDe = id => id === ADMIN_ID ? 'Administrateur' : membres.find(m => m.id === id)?.nom || 'Membre ' + id;
+// badge « Admin » (même style que la barre du haut) à côté de l'Administrateur
+const badgeAdmin = id => id === ADMIN_ID ? ' <span class="role-pill admin">Admin</span>' : '';
+// lien vers le profil, sauf pour l'Administrateur (pas de fiche Membre)
+const lienProfil = (id, html) => memberLink(id === ADMIN_ID ? null : id, html);
 const date = d => new Date(d).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
 
 /* ---------- Liste des conversations (gauche) ---------- */
@@ -28,13 +36,13 @@ const date = d => new Date(d).toLocaleString('fr-FR', { dateStyle: 'short', time
 function dessinerConvs() {
   const q = norm($('#q').value);
   const f = convs.filter(c => norm(c.nom).includes(q));
-  const r = paginer(f, 8, pageConvs);
+  const r = paginer(f, PAGE_SIZE, pageConvs);
   pageConvs = r.page;
   $('#convs').innerHTML = !f.length ? ligneVide(convs.length ? 'Aucun résultat' : 'Aucune conversation')
     : r.items.map(c => `<button class="conv ${c.interlocuteurId === avec ? 'on' : ''}" data-avec="${c.interlocuteurId}">
           ${icon(c.nom)}
           <span class="conv-txt">
-            <span class="meta"><b>${esc(c.nom)}</b><span>${date(c.dateDernierMessage)}</span></span>
+            <span class="meta"><b>${esc(c.nom)}${badgeAdmin(c.interlocuteurId)}</b><span>${date(c.dateDernierMessage)}</span></span>
             <span class="sub">${esc(c.extrait)}</span>
           </span>
           ${c.nonLus ? `<span class="nav-badge">${c.nonLus}</span>` : ''}
@@ -99,8 +107,8 @@ async function ouvrir(id) {
   history.replaceState(null, '', `messages.html?avec=${id}`);
   $('#discussion').innerHTML = `<div class="disc-tete">
       <button class="btn small retour" id="retour">← Conversations</button>
-      ${memberLink(id, icon(nomDe(id)))}
-      <b>${memberLink(id, esc(nomDe(id)))}</b>
+      ${lienProfil(id, icon(nomDe(id)))}
+      <b>${lienProfil(id, esc(nomDe(id)))}</b>${badgeAdmin(id)}
     </div>
     <div class="bulles" id="bulles">${skeleton(1)}</div>
     <form class="saisie" id="saisie">
@@ -166,14 +174,16 @@ function nouveauMessage() {
   let props = [], actif = -1;
   const afficher = () => {
     $('#mList').innerHTML = props.length ? props.map((m, i) =>
-      `<li data-i="${i}" class="${i === actif ? 'on' : ''}">${esc(m.nom)} · ${esc(m.email)}</li>`).join('')
+      `<li data-i="${i}" class="${i === actif ? 'on' : ''}">${esc(m.nom)}${m.email ? ' · ' + esc(m.email) : ''}${badgeAdmin(m.id)}</li>`).join('')
       : '<li class="vide">Aucun membre</li>';
     $('#mList').hidden = false;
     $('#mList .on')?.scrollIntoView({ block: 'nearest' });
   };
   const filtrer = () => {
     const q = norm(inp.value);
-    props = membres.filter(m => m.id !== moiId && norm(m.nom + ' ' + m.email).includes(q));
+    // contacts : pour un membre, l'Administrateur puis les autres membres ; pour l'Admin, tous les membres
+    const contacts = (s?.admin ? [] : [{ id: ADMIN_ID, nom: 'Administrateur', email: '' }]).concat(membres);
+    props = contacts.filter(m => m.id !== moiId && norm(m.nom + ' ' + m.email + (m.id === ADMIN_ID ? ' admin' : '')).includes(q));
     actif = -1;
     afficher();
   };
@@ -225,7 +235,7 @@ view(`<div class="sec"><h2>Messages</h2></div>
 (async () => {
   try {
     membres = await toutes('/api/Membres');
-    moiId = membres.find(m => norm(m.email) === norm(s?.name))?.id ?? null;
+    moiId = s?.admin ? ADMIN_ID : membres.find(m => norm(m.email) === norm(s?.name))?.id ?? null;
     if (moiId == null) {
       view(emptyBox('🔒', 'La messagerie est réservée aux comptes qui ont une fiche membre.'));
       return;
@@ -233,7 +243,7 @@ view(`<div class="sec"><h2>Messages</h2></div>
     $('#btnNouveau').onclick = nouveauMessage;
     $('#q').oninput = () => { pageConvs = 1; dessinerConvs(); };
     await chargerConvs();
-    if (avec && avec !== moiId) await ouvrir(avec);
+    if (avec != null && avec !== moiId) await ouvrir(avec);
 
     // Toutes les 15 s, seulement si la page est visible.
     setInterval(() => { if (document.visibilityState === 'visible') rafraichir(); }, 15000);

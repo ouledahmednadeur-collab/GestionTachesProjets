@@ -40,7 +40,28 @@ async function load() {
     // Panneau « Gestion » : seulement pour l'Admin ou le titulaire de la tâche.
     // Simple confort d'interface : la sécurité réelle est faite par le backend
     // (PUT /api/Taches/{id}/statut renvoie 403 pour la tâche d'un autre membre).
-    const gere = s?.admin || (moiId != null && t.membreId === moiId);
+    // Privilèges PAR PROJET (rôle comme « Superviseur » affecté dans un projet) : droits chargés
+    // UNE fois pour la page (mesDroits()), et on ne regarde QUE le projet de cette tâche
+    // (projets[t.projetId].privileges). Afficher ou masquer les boutons n'est qu'un confort :
+    // le backend revérifie tout (403).
+    const droits = await mesDroits();
+    const peutAffecter = peut(t.projetId, 'taches.affecter');
+    const peutStatut = s?.admin || (moiId != null && t.membreId === moiId)
+      || peut(t.projetId, 'taches.statut');
+    const peutModerer = peut(t.projetId, 'commentaires.moderer');
+    // membres du projet (au moins une tâche) : utiles seulement pour la liste « Assignée à »
+    const tachesProjet = peutAffecter && !s?.admin ? await toutes(`/api/projets/${t.projetId}/taches`).catch(() => []) : [];
+    const membresProjet = new Set(tachesProjet.map(x => x.membreId).filter(x => x != null));
+    // pastille « Votre rôle ici » à côté du titulaire (privilèges au survol)
+    const monRoleIci = droits.admin ? '<span class="role-pill admin" title="Tous les privilèges sur tous les projets">Administrateur</span>'
+      : droitsProjet(droits, t.projetId).roles.length
+        ? `<span class="role-pill metier" title="${esc(survolPrivileges(droitsProjet(droits, t.projetId).privileges))}">Votre rôle ici : ${esc(droitsProjet(droits, t.projetId).roles.join(', '))}</span>`
+        : '';
+    // liste « Assignée à » : tous les membres pour l'Admin, les membres du projet (et soi) sinon
+    const optsAffectation = s?.admin ? opts(t.membreId)
+      : ms.filter(m => membresProjet.has(m.id) || m.id === moiId).map(m =>
+          `<option value="${m.id}" ${m.id === t.membreId ? 'selected' : ''}>${esc(m.nom)}</option>`).join('');
+    const gere = s?.admin || (moiId != null && t.membreId === moiId) || peutStatut || peutAffecter;
 
     // Petit engrenage (forme du logo) dont la vitesse dépend du statut de la TÂCHE :
     // arrêté si Terminée, lent si À faire, rapide si En cours (classes gear--…).
@@ -60,6 +81,7 @@ async function load() {
           <span class="st ${t.statut}">${STATUTS[t.statut] || t.statut}</span>
           <span class="titulaire">${engrenage}${titulaire
             ? `Titulaire : <b>${memberLink(titulaire.id, esc(titulaire.nom))}</b>` : 'Non affectée'}</span>
+          ${monRoleIci}
           <p style="margin-top:10px">${esc(t.description || 'Pas de description')}</p>
         </div>
         ${s?.admin ? '<button class="btn danger" id="delT">Supprimer</button>' : ''}
@@ -71,12 +93,17 @@ async function load() {
           <div id="listeComs"></div>
           <form id="fc" style="margin-top:14px">
             <label>Écrire un commentaire</label>
-            <textarea name="contenu" rows="2" required></textarea>
+            <textarea name="contenu" rows="2" required ${!s?.admin && moiId == null ? 'disabled' : ''}></textarea>
+            <!-- Auteur affiché en lecture seule : personne (pas même l'Admin) ne choisit au nom de
+                 qui il écrit. Le serveur déduit TOUJOURS l'auteur du token
+                 (CommentairesController.Create) : le formulaire n'envoie plus de membreId. -->
             <div class="row" style="margin-top:10px">
-              <select name="membreId" style="max-width:200px" title="Auteur du commentaire">
-                ${opts(ms.find(m => m.email === s?.name)?.id)}
-              </select>
-              <button class="btn primary">Publier</button>
+              ${s?.admin ? `<span class="auteur-puce">${icon(s.name.split('@')[0])}
+                <span>Vous commentez en tant que <b>${esc(s.name.split('@')[0])}</b>${badgeAdminCom({ estAdmin: true })}</span></span>`
+              : moiId != null ? `<span class="auteur-puce">${icon(ms.find(m => m.id === moiId).nom)}
+                <span>Vous commentez en tant que <b>${esc(ms.find(m => m.id === moiId).nom)}</b></span></span>`
+              : '<span class="sub">Aucun profil membre associé à ce compte</span>'}
+              <button class="btn primary" ${!s?.admin && moiId == null ? 'disabled' : ''}>Publier</button>
             </div>
           </form>
         </div>
@@ -88,18 +115,18 @@ async function load() {
             <div class="pt-bloc">
               <label class="pt-label" for="stSel">Statut</label>
               <div class="pt-statut">${engrenage}<span class="st ${t.statut}">${STATUTS[t.statut] || t.statut}</span></div>
-              <select id="stSel">
+              ${peutStatut ? `<select id="stSel">
                 ${Object.entries(STATUTS).map(([k, l]) =>
                   `<option value="${k}" ${k === t.statut ? 'selected' : ''}>${l}</option>`).join('')}
-              </select>
+              </select>` : ''}
             </div>
             <hr class="pt-sep">
             <div class="pt-bloc">
-              <label class="pt-label"${s?.admin ? ' for="afSel"' : ''}>Assignée à</label>
-              ${s?.admin ? `${renderMembre(nomTitulaire, t.membreRole, '', t.membreId)}
+              <label class="pt-label"${peutAffecter ? ' for="afSel"' : ''}>Assignée à</label>
+              ${peutAffecter ? `${renderMembre(nomTitulaire, t.membreRole, '', t.membreId)}
               <select id="afSel">
                 <option value="">— Choisir —</option>
-                ${opts(t.membreId)}
+                ${optsAffectation}
               </select>` : renderMembre(nomTitulaire, t.membreRole,
                 t.membreId === moiId ? ' <span class="badge vous">Vous</span>' : '', t.membreId)}
             </div>
@@ -135,12 +162,14 @@ async function load() {
         //    api() ajoute Content-Type: application/json et le token Bearer.
         // 3. Si le serveur refuse (400, 403, 404…), api() lève une erreur
         //    -> catch -> toast rouge.
-        await api(`/api/Taches/${id}/statut`, 'PUT', { statut: $('#stSel').value });
+        // (seulement si la liste de statut est affichée : Admin, titulaire ou privilège « taches.statut »)
+        if ($('#stSel')) await api(`/api/Taches/${id}/statut`, 'PUT', { statut: $('#stSel').value });
 
         // Affectation seulement si un membre est choisi :
         // PUT /api/Taches/{id}/affecter avec { membreId }.
+        // (Admin, ou privilège « taches.affecter » dans un de ses projets ; le backend revérifie)
         const m = $('#afSel')?.value;
-        if (m && session().admin) await api(`/api/Taches/${id}/affecter`, 'PUT', { membreId: +m });
+        if (m && peutAffecter) await api(`/api/Taches/${id}/affecter`, 'PUT', { membreId: +m });
 
         // 4. Succès : message, puis load() recharge la tâche et redessine la page.
         //    L'avancement du projet n'est pas stocké : le serveur le recalcule à partir
@@ -158,7 +187,7 @@ async function load() {
       const d = Object.fromEntries(new FormData(e.target));
       try {
         await api(`/api/taches/${id}/commentaires`, 'POST',
-          { contenu: d.contenu, membreId: +d.membreId });
+          { contenu: d.contenu });   // auteur déduit du token par le serveur
         toast('Commentaire ajouté');
         load();
       } catch (er) {
@@ -171,10 +200,10 @@ async function load() {
     // pour garder la page courante quand la page se recharge après une suppression.
     const comHtml = c => `
             <div class="com">
-              ${renderMembre(ms.find(m => m.id === c.membreId)?.nom || 'Membre ' + c.membreId, null,
-                ` <small>· ${new Date(c.dateCreation).toLocaleString('fr-FR')}</small>`, c.membreId)}
+              ${renderMembre(auteurCom(c, x => ms.find(m => m.id === x)?.nom), null,
+                `${badgeAdminCom(c)} <small>· ${new Date(c.dateCreation).toLocaleString('fr-FR')}</small>`, c.membreId)}
               <div>${esc(c.contenu)}</div>
-              ${s?.admin || (moiId != null && c.membreId === moiId)
+              ${s?.admin || peutModerer || (moiId != null && c.membreId === moiId)
                 ? `<button class="btn danger" data-delc="${c.id}">Supprimer</button>` : ''}
             </div>`;
     const brancherSuppressions = () =>
@@ -189,7 +218,7 @@ async function load() {
           }
         }));
     const rendreComs = () => {
-      const r = paginer(cs, 10, pageComs);
+      const r = paginer(cs, PAGE_SIZE, pageComs);
       pageComs = r.page;
       $('#listeComs').innerHTML = cs.length ? r.items.map(comHtml).join('') + r.html
         : '<p style="color:var(--muted)">Aucun commentaire.</p>';

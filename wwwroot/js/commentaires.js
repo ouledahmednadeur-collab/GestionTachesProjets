@@ -45,13 +45,13 @@ async function load() {
   // Carreau d'un commentaire (mêmes classes que les cartes de tâches) ;
   // un clic ouvre la tâche concernée.
   const carte = c => {
-    const auteur = nomsParId[c.membreId] || 'Membre ' + c.membreId;
+    const auteur = auteurCom(c, x => nomsParId[x]);   // Admin : nom renvoyé par l'API
     const t = tachesParId[c.tacheId];
     return `<a class="card" href="tache.html?id=${c.tacheId}">
         <div class="head">
           ${memberLink(c.membreId, icon(auteur), true)}
           <div>
-            <h3>${memberLink(c.membreId, esc(auteur), true)}</h3>
+            <h3>${memberLink(c.membreId, esc(auteur), true)}${badgeAdminCom(c)}</h3>
             <span class="sub">${new Date(c.dateCreation).toLocaleString('fr-FR')}</span>
           </div>
         </div>
@@ -79,9 +79,12 @@ async function load() {
 
     const auteurs = new Set(coms.filter(c => duProjet(c, p)).map(c => c.membreId));
     const mbs = p ? membres.filter(x => auteurs.has(x.id)) : membres;
-    $('#fM').innerHTML = '<option value="">Tous</option>' + mbs.map(x =>
+    // option « Admin » : commentaires écrits par un Admin (s'il y en a dans ce projet)
+    const avecAdmin = coms.some(c => c.estAdmin && duProjet(c, p));
+    $('#fM').innerHTML = '<option value="">Tous</option>'
+      + (avecAdmin ? '<option value="admin">Admin</option>' : '') + mbs.map(x =>
       `<option value="${x.id}">${esc(x.nom)}</option>`).join('');
-    $('#fM').value = mbs.some(x => String(x.id) === avantM) ? avantM : '';
+    $('#fM').value = mbs.some(x => String(x.id) === avantM) || (avantM === 'admin' && avecAdmin) ? avantM : '';
   };
 
   // Applique les filtres (ET logique) et redessine la grille, sans rien recharger.
@@ -89,9 +92,10 @@ async function load() {
     if (!coms) return;
     const q = norm($('#q').value), p = $('#fP').value, t = $('#fT').value, m = $('#fM').value;
     const f = coms.filter(c => norm(c.contenu).includes(q) && duProjet(c, p)
-      && (!t || String(c.tacheId) === t) && (!m || String(c.membreId) === m));
+      && (!t || String(c.tacheId) === t)
+      && (!m || (m === 'admin' ? c.estAdmin : String(c.membreId) === m)));
     // Grille paginée par 12 (pagination commune, page conservée tant que le filtre ne change pas).
-    const r = paginer(f, 12, page);
+    const r = paginer(f, PAGE_SIZE, page);
     page = r.page;
     $('#out').innerHTML = f.length
       ? `<div class="grid">${r.items.map(carte).join('')}</div>${r.html}`

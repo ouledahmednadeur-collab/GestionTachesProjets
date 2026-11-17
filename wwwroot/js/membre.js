@@ -13,7 +13,7 @@
 /* ---------- Constantes et état de la page ---------- */
 
 let id = +param('id');     // identifiant du membre lu dans l'URL (?moi=1 : le membre connecté)
-const SIZE = 6;            // nombre de tâches par page
+const SIZE = PAGE_SIZE;    // nombre de tâches par page (constante commune)
 const MAX_COMS = 20;       // derniers commentaires : cherchés dans les 20 tâches les plus récentes
 let page = 1;              // page courante de la liste des tâches
 
@@ -29,11 +29,169 @@ const puce = (n, txt) => `<span class="badge">${n} ${txt}</span>`;
 
 view(`<div class="crumb"><a href="membres.html">Membres</a></div>${skeleton(3)}`);
 
+/* ---------- Admin : bloc « Gérer ce membre » ---------- */
+
+// Visible seulement pour l'Admin (le backend refuse de toute façon ces actions aux autres : 403).
+// Réutilise les endpoints existants : POST /api/Taches, PUT /api/Taches/{id}/affecter,
+// POST /api/Roles/attribuer et DELETE /api/Roles/retirer (avec projetId : rôle par projet).
+// recharger() : redessine la page avec des données fraîches, sans recharger le navigateur.
+async function gererMembre({ m, ids, projets, affectations, recharger }) {
+  const zone = $('#gestion');
+  if (!zone) return;
+  const nomP = pid => projets.find(p => p.id === pid)?.nom || 'Projet ' + pid;
+
+  // Rôles attribuables dans un projet (Admin et Membre restent globaux) et leurs privilèges.
+  const [tous, catalogue] = await Promise.all([api('/api/Roles').then(list), api('/api/Roles/privileges')]);
+  const rolesProjet = tous.filter(r => r !== 'Admin' && r !== 'Membre');
+  const privs = {};
+  await Promise.all(rolesProjet.map(async r => {
+    privs[r] = await api(`/api/Roles/${encodeURIComponent(r)}/privileges`).catch(() => []);
+  }));
+  // Infobulle d'un rôle : ses privilèges en clair.
+  const infobulle = r => 'Privilèges : ' + ((privs[r] || [])
+    .map(k => catalogue.find(p => p.cle === k)?.libelle || k).join(', ') || 'aucun');
+  const optionsRoles = (exclus = []) => rolesProjet.filter(r => !exclus.includes(r))
+    .map(r => `<option value="${esc(r)}" title="${esc(infobulle(r))}">${esc(r)}</option>`).join('');
+
+  // Boutons d'action puis, pour chaque projet du membre : ses rôles (× pour retirer) et un
+  // sélecteur pour en ajouter (privilèges du rôle choisi affichés dessous).
+  zone.innerHTML = `<div class="row">
+      <button class="btn small primary" type="button" data-g="ajouter">Ajouter à un projet</button>
+      <button class="btn small" type="button" data-g="donner">Donner une tâche</button>
+    </div>
+    <h4 class="gestion-titre">Rôles dans ses projets</h4>
+    ${ids.length ? ids.map(pid => {
+      const mes = affectations.filter(a => a.projetId === pid).map(a => a.role);
+      const restants = optionsRoles(mes);
+      return `<div class="droits-projet">
+        <a href="projet.html?id=${pid}">${esc(nomP(pid))}</a>
+        <div class="mes-droits">${mes.map(r => `<span class="role-pill metier" title="${esc(infobulle(r))}">${esc(r)}
+            <button type="button" class="pill-x" data-retirer="${esc(r)}" data-projet="${pid}"
+              aria-label="Retirer le rôle ${esc(r)}">×</button></span>`).join('') || '<span class="sub">Aucun rôle</span>'}</div>
+        ${restants ? `<div class="row gestion-ajout">
+            <select data-role-projet="${pid}"><option value="">Ajouter un rôle…</option>${restants}</select>
+            <button class="btn small" type="button" data-ajouter-role="${pid}">Ajouter</button>
+          </div>
+          <p class="sub" data-info="${pid}"></p>` : ''}
+      </div>`;
+    }).join('') : '<p class="sub">Aucun projet : utilisez « Ajouter à un projet ».</p>'}`;
+
+  // Actions des boutons du bloc (délégation).
+  zone.onclick = e => {
+    const g = e.target.closest('[data-g]');
+    if (g) return ouvrir(g.dataset.g);
+    const x = e.target.closest('[data-retirer]');
+    if (x) return confirmDo(`Retirer le rôle « ${x.dataset.retirer} » à ${m.nom} dans « ${nomP(+x.dataset.projet)} » ?`, async () => {
+      try {
+        await api('/api/Roles/retirer', 'DELETE', { email: m.email, role: x.dataset.retirer, projetId: +x.dataset.projet });
+        toast('Rôle retiré');
+        recharger();
+      } catch (er) { toast(er.message, true); }
+    });
+    const a = e.target.closest('[data-ajouter-role]');
+    if (a) {
+      const pid = +a.dataset.ajouterRole, role = zone.querySelector(`[data-role-projet="${pid}"]`).value;
+      if (!role) return toast('Choisissez un rôle', true);
+      api('/api/Roles/attribuer', 'POST', { email: m.email, role, projetId: pid })
+        .then(() => { toast('Rôle attribué'); recharger(); })
+        .catch(er => toast(er.message, true));
+    }
+  };
+  // Choix d'un rôle dans un sélecteur : ses privilèges affichés dessous.
+  zone.onchange = e => {
+    const sel = e.target.closest('[data-role-projet]');
+    if (sel) zone.querySelector(`[data-info="${sel.dataset.roleProjet}"]`).textContent = sel.value ? infobulle(sel.value) : '';
+  };
+
+  // Fenêtre « Ajouter à un projet » (tous les projets, rôle facultatif) ou « Donner une tâche »
+  // (projets du membre) : tâche existante du projet, ou nouvelle tâche déjà affectée au membre.
+  const ouvrir = mode => {
+    const choix = mode === 'donner' ? projets.filter(p => ids.includes(p.id)) : projets;
+    if (!choix.length) return toast('Ce membre n\'est dans aucun projet : utilisez « Ajouter à un projet »', true);
+    const fen = document.createElement('div');
+    fen.className = 'modal';
+    fen.innerHTML = `<form class="box">
+        <h3>${mode === 'donner' ? 'Donner une tâche' : 'Ajouter à un projet'} : ${esc(m.nom)}</h3>
+        <label>Projet</label>
+        <input data-cherche placeholder="Rechercher un projet…" autocomplete="off">
+        <select name="projetId" required></select>
+        <label>Tâche</label>
+        <select name="tacheId"><option value="">— Créer une nouvelle tâche —</option></select>
+        <div data-nouvelle>
+          <label>Titre</label>
+          <input name="titre" maxlength="150">
+          <label>Description</label>
+          <textarea name="description" rows="2" maxlength="500"></textarea>
+        </div>
+        ${mode === 'ajouter' ? `<label>Rôle dans ce projet (facultatif)</label>
+          <select name="role"><option value="">— Aucun —</option>${optionsRoles()}</select>` : ''}
+        <div class="foot">
+          <button type="button" class="btn" data-x>Annuler</button>
+          <button class="btn primary">Valider</button>
+        </div>
+      </form>`;
+    document.body.appendChild(fen);
+    const form = fen.querySelector('form');
+    const fermer = () => { fen.remove(); document.removeEventListener('keydown', echap); };
+    const echap = e => { if (e.key === 'Escape') fermer(); };
+    document.addEventListener('keydown', echap);
+    fen.addEventListener('click', e => { if (e.target === fen || e.target.hasAttribute('data-x')) fermer(); });
+
+    // Liste des projets filtrée par la recherche ; un changement de projet recharge ses tâches.
+    const remplirProjets = q => {
+      form.projetId.innerHTML = '<option value="">Choisir un projet…</option>' + choix
+        .filter(p => norm(p.nom).includes(norm(q)))
+        .map(p => `<option value="${p.id}">${esc(p.nom)}</option>`).join('');
+    };
+    const chargerTaches = async () => {
+      const pid = form.projetId.value;
+      const ts = pid ? await toutes(`/api/projets/${pid}/taches`).catch(() => []) : [];
+      form.tacheId.innerHTML = '<option value="">— Créer une nouvelle tâche —</option>' + ts
+        .filter(t => t.membreId !== m.id)   // pas celles qu'il a déjà
+        .map(t => `<option value="${t.id}">${esc(t.titre)}${t.membreId == null ? ' (non affectée)' : ' (déjà affectée)'}</option>`).join('');
+      basculer();
+    };
+    // Champs « nouvelle tâche » visibles seulement si aucune tâche existante n'est choisie.
+    const basculer = () => { fen.querySelector('[data-nouvelle]').hidden = !!form.tacheId.value; };
+    fen.querySelector('[data-cherche]').oninput = e => { remplirProjets(e.target.value); chargerTaches(); };
+    form.projetId.onchange = chargerTaches;
+    form.tacheId.onchange = basculer;
+    remplirProjets('');
+
+    form.onsubmit = async e => {
+      e.preventDefault();
+      const d = Object.fromEntries(new FormData(form));
+      if (!d.projetId) return toast('Choisissez un projet', true);
+      if (!d.tacheId && !d.titre.trim()) return toast('Choisissez une tâche ou donnez un titre', true);
+      try {
+        // 1. tâche : existante, ou créée dans le projet ; 2. affectation au membre
+        const tid = d.tacheId || (await api('/api/Taches', 'POST',
+          { titre: d.titre.trim(), description: d.description, projetId: +d.projetId })).id;
+        await api(`/api/Taches/${tid}/affecter`, 'PUT', { membreId: m.id });
+      } catch (er) { return toast(er.message, true); }
+      fermer();
+      // 3. rôle facultatif, une fois le membre dans le projet (il a maintenant une tâche)
+      if (d.role) {
+        try {
+          await api('/api/Roles/attribuer', 'POST', { email: m.email, role: d.role, projetId: +d.projetId });
+        } catch (er) {
+          toast('Tâche affectée, mais rôle non attribué : ' + er.message, true);
+          return recharger();
+        }
+      }
+      toast(d.role ? 'Tâche affectée et rôle attribué' : 'Tâche affectée');
+      recharger();
+    };
+    fen.querySelector('[data-cherche]').focus();
+  };
+}
+
 /* ---------- Chargement et affichage ---------- */
 
 // Fonction async exécutée tout de suite : données principales en une passe, puis affichage ;
 // les commentaires sont chargés ensuite (squelette dans leur carte en attendant).
-(async () => {
+// Nommée afficherProfil : rappelée après une action de l'Admin (bloc « Gérer ce membre »).
+const afficherProfil = async () => {
   const s = session();
 
   // membre.html?moi=1 (avatar de la barre du haut) : on retrouve sa fiche par son email.
@@ -52,16 +210,20 @@ view(`<div class="crumb"><a href="membres.html">Membres</a></div>${skeleton(3)}`
   const moi = norm(m.email) === norm(s?.name);   // le membre consulte son propre profil
   // compte sans fiche membre (retenu par majMessages) : pas de bouton « Envoyer un message »
   let sansFiche = false;
-  try { sansFiche = sessionStorage.getItem('sansFiche:' + norm(s?.name)) === '1'; } catch {}
+  // (l'Admin peut écrire à un membre : jamais « sans fiche » pour la messagerie)
+  try { sansFiche = !s?.admin && sessionStorage.getItem('sansFiche:' + norm(s?.name)) === '1'; } catch {}
   const complet = !!s?.admin || moi;              // toutes ses tâches visibles
 
   // Rôles : liste des comptes si Admin (endpoint réservé à l'Admin), sa session sur son profil,
   // rien pour un collègue (aucun appel aux rôles).
-  let roles = [];
+  // Admin : aussi ses rôles par projet (affectations), pour le bloc « Gérer ce membre ».
+  let roles = [], affectations = [];
   try {
-    if (s?.admin) roles = list(await api('/api/Roles/utilisateurs'))
-      .find(u => norm(u.email) === norm(m.email))?.roles || [];
-    else if (moi) roles = s.roles;
+    if (s?.admin) {
+      const compte = list(await api('/api/Roles/utilisateurs')).find(u => norm(u.email) === norm(m.email));
+      roles = compte?.roles || [];
+      affectations = compte?.affectations || [];
+    } else if (moi) roles = s.roles;
   } catch {}
 
   // Tâches visibles et noms des projets.
@@ -154,6 +316,10 @@ view(`<div class="crumb"><a href="membres.html">Membres</a></div>${skeleton(3)}`
       </div>
 
       <div class="profil-cote">
+        ${s?.admin ? `<div class="panel">
+          <h3 style="margin-top:0">Gérer ce membre</h3>
+          <div id="gestion">${skeleton(1)}</div>
+        </div>` : ''}
         <div class="panel">
           <h3 style="margin-top:0">Avancement</h3>
           ${avHtml(pct(avancement))}
@@ -161,6 +327,11 @@ view(`<div class="crumb"><a href="membres.html">Membres</a></div>${skeleton(3)}`
           <div class="meta" style="margin-top:6px"><span class="st EnCours">En cours</span><b>${enCours}</b></div>
           <div class="meta" style="margin-top:6px"><span class="st Terminee">Terminées</span><b>${faites}</b></div>
         </div>
+
+        ${moi ? `<div class="panel">
+          <h3 style="margin-top:0">Mes rôles et privilèges</h3>
+          <div id="mesRoles">${skeleton(1)}</div>
+        </div>` : ''}
 
         <div class="panel">
           <h3 style="margin-top:0">${complet ? 'Projets' : 'Projets en commun'} (${ids.length})</h3>
@@ -173,6 +344,18 @@ view(`<div class="crumb"><a href="membres.html">Membres</a></div>${skeleton(3)}`
         </div>
       </div>
     </div>`);
+
+  // Mon propre profil seulement (jamais celui d'un autre) : un bloc par projet où j'ai un rôle
+  // (lien vers le projet), pastilles des rôles et libellés des privilèges.
+  if (moi) mesDroits().then(d => {
+    const entrees = Object.entries(d?.projets || {});
+    $('#mesRoles').innerHTML = d?.admin ? htmlDroitsProjet(d)
+      : !entrees.length ? '<p class="sub" style="margin:0">Vous n\'avez aucun privilège spécial</p>'
+      : entrees.map(([pid, p]) => `<div class="droits-projet">
+          <a href="projet.html?id=${pid}">${esc(p.projetNom)}</a>
+          <div class="mes-droits">${htmlDroitsProjet(d, pid)}</div>
+        </div>`).join('');
+  });
 
   /* ----- Liste des tâches : filtres, recherche, pagination ----- */
 
@@ -211,6 +394,10 @@ view(`<div class="crumb"><a href="membres.html">Membres</a></div>${skeleton(3)}`
   const filtre = () => { page = 1; draw(); };
   $('#q').oninput = $('#fP').onchange = $('#fS').onchange = filtre;
   draw();
+
+  // Admin : bloc « Gérer ce membre » (une erreur s'affiche dans le bloc, sans casser la page).
+  if (s?.admin) gererMembre({ m, ids, projets, affectations, recharger: () => afficherProfil().catch(e => toast(e.message, true)) })
+    .catch(e => { if ($('#gestion')) $('#gestion').innerHTML = discret(esc(e.message)); });
 
   /* ----- Chargements secondaires (une passe chacun, en parallèle) ----- */
 
@@ -259,6 +446,7 @@ view(`<div class="crumb"><a href="membres.html">Membres</a></div>${skeleton(3)}`
           <span>${new Date(c.dateCreation).toLocaleDateString('fr-FR')}</span></div>
         <div class="sub">${esc(c.contenu.length > 90 ? c.contenu.slice(0, 90) + '…' : c.contenu)}</div>
       </a>`).join('') : discret('Aucun commentaire.');
-})().catch(e => {
+};
+afficherProfil().catch(e => {
   view(`<div class="crumb"><a href="membres.html">Membres</a></div>${emptyBox('⚠️', esc(e.message))}`);
 });
