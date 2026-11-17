@@ -2450,3 +2450,89 @@ button.role-pill:hover {
 [data-nouvelle][hidden] {
   display: none;
 }
+/* ==================================================================
+   Connexion : échange des logos gauche / droite selon l'onglet choisi.
+   Chaque zone superpose ses deux logos (même case de grille, donc aucune variation de taille) ;
+   .mode-admin sur #app affiche l'autre logo par un fondu de 350 ms.
+   ================================================================== */
+.logo-pile {
+  display: grid;
+  justify-items: center;
+  align-items: center;
+}
+.logo-pile > div {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  transition: opacity .35s ease, transform .35s ease, visibility 0s linear 0s;
+}
+/* logo caché : transparent, légèrement réduit, puis retiré de l'accessibilité après le fondu.
+   Mode Utilisateur (d'origine) : Admin à gauche, Membre à droite ; mode Admin : l'inverse. */
+#app:not(.mode-admin) .admin-hero .vue-user,
+#app:not(.mode-admin) .auth-head .vue-admin,
+#app.mode-admin .admin-hero .vue-admin,
+#app.mode-admin .auth-head .vue-user {
+  opacity: 0;
+  transform: scale(.92);
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .35s ease, transform .35s ease, visibility 0s linear .35s;
+}
+/* zone de gauche : le logo Membre à la même échelle que le grand engrenage Admin */
+.admin-hero .gear-anim {
+  width: min(440px,40vw);
+  margin: 0;
+}
+/* carte : le logo Admin à la taille du logo Membre */
+.auth-head .admin-gear {
+  width: 120px;
+}
+@media (max-width: 639px) {
+  .admin-hero .gear-anim {
+    width: 180px;
+  }
+  .auth-head .admin-gear {
+    width: 110px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .logo-pile > div,
+  #app:not(.mode-admin) .admin-hero .vue-user,
+  #app:not(.mode-admin) .auth-head .vue-admin,
+  #app.mode-admin .admin-hero .vue-admin,
+  #app.mode-admin .auth-head .vue-user {
+    transition: none;
+    transform: none;
+  }
+}
+/* grand engrenage du fond (dans .fond-anime, ajouté par common.js) : bleu principal, très
+   transparent, centré sur le coin inférieur droit (en partie hors de l'écran) ; un tour en
+   150 s, uniquement en transform (animé par la carte graphique, aucun JavaScript) */
+.fond-anime .fond-engrenage {
+  position: absolute;
+  right: -32vmin;
+  bottom: -32vmin;
+  width: 90vmin;
+  height: 90vmin;
+  color: var(--accent);
+  opacity: .06;
+  will-change: transform;
+  animation: fondEngrenage 150s linear infinite;
+}
+@keyframes fondEngrenage {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-color-scheme: dark) {
+  .fond-anime .fond-engrenage {
+    opacity: .05;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fond-anime .fond-engrenage {
+    animation: none;
+  }
+}

@@ -888,8 +888,18 @@ renderTop(PAGE);
 renderFooter();
 
 // Fond commun (halos qui dérivent + grille) : une couche fixe derrière le contenu, décorative.
+// + un grand engrenage (10 dents, trou central) dessiné par gearPath(), qui tourne très lentement.
+// Remplissage en dégradé radial : bord des dents très estompé (effet « fade », sans contour dur).
 document.body.insertAdjacentHTML('afterbegin', `<div class="fond-anime" aria-hidden="true">
     <i class="halo halo-a"></i><i class="halo halo-b"></i><i class="halo halo-c"></i>
+    <svg class="fond-engrenage" viewBox="-62 -62 124 124" focusable="false">
+      <defs><radialGradient id="fondEngrenageDegrade">
+        <stop offset="55%" stop-color="currentColor"/>
+        <stop offset="100%" stop-color="currentColor" stop-opacity=".35"/>
+      </radialGradient></defs>
+      <path d="${gearPath(10, 10, 14)}" fill="url(#fondEngrenageDegrade)" fill-rule="evenodd"
+        stroke="url(#fondEngrenageDegrade)" stroke-width="5" stroke-linejoin="round"/>
+    </svg>
   </div>`);
 
 // Sections .side-row : recalcul à chaque redessin du contenu (filtres, recherche,

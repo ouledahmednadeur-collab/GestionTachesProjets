@@ -29,10 +29,10 @@ const VUES = {
 
 // Anneau denté (28 dents) qui tourne lentement ; au centre, un administrateur fixe :
 // costume, chemise, cravate, et un écusson doré coché (signe « Admin »).
-function adminGear() {
+// Le SVG seul (adminGearSvg) sert aussi de logo dans la carte en mode Administrateur.
+function adminGearSvg() {
   const anneau = `<path class="gl-ring" fill-rule="evenodd" d="${gearPath(28, 5, 54)}"/>`;
-  return `<div class="admin-hero">
-      <svg class="admin-gear" viewBox="-80 -80 160 160" aria-hidden="true">
+  return `<svg class="admin-gear" viewBox="-80 -80 160 160" aria-hidden="true">
         <g class="gl-spin cw" style="--d:24s">
           <g class="gl-boost cw" style="--d:48s">${anneau}</g>
         </g>
@@ -47,9 +47,25 @@ function adminGear() {
         </g>
         <path class="gl-ecusson" d="M38 24 50 29V38C50 46 44 51 38 53 32 51 26 46 26 38V29Z"/>
         <path class="gl-arete" fill="none" d="M32.5 38.5 36.5 42.5 44 34.5"/>
-      </svg>
-      <b>Administrateur</b>
-      <span>Pilote les projets, les membres et les rôles</span>
+      </svg>`;
+}
+
+// Zone de gauche : deux vues superposées (Admin, Membre). En mode Administrateur
+// (classe .mode-admin sur #app), les logos de gauche et de droite s'échangent par un fondu.
+function adminGear() {
+  return `<div class="admin-hero">
+      <div class="logo-pile">
+        <div class="vue-admin">
+          ${adminGearSvg()}
+          <b>Administrateur</b>
+          <span>Pilote les projets, les membres et les rôles</span>
+        </div>
+        <div class="vue-user">
+          ${gearLogo(true)}
+          <b>Membre</b>
+          <span>Suit ses projets et ses tâches</span>
+        </div>
+      </div>
     </div>`;
 }
 
@@ -61,7 +77,11 @@ function draw() {
   const reg = mode === 'register', v = VUES[mode], d = saisies[mode];
   const html = `${adminGear()}<div class="auth panel auth-card${premier ? ' appear' : ''}">
     <div class="auth-head">
-      ${gearLogo(true)}
+      <!-- logo de la carte : membre (mode Utilisateur) ou Admin (mode Administrateur) -->
+      <div class="logo-pile">
+        <div class="vue-user">${gearLogo(true)}</div>
+        <div class="vue-admin">${adminGearSvg()}</div>
+      </div>
       <h1>Bienvenue</h1>
       <p>Connectez-vous pour gérer vos projets et vos tâches</p>
     </div>
@@ -107,6 +127,8 @@ function draw() {
     while (neuf.nextSibling) tete.parentNode.append(neuf.nextSibling);
   }
   premier = false;
+  // Échange des logos gauche / droite : seulement une classe sur le conteneur (CSS).
+  $('#app').classList.toggle('mode-admin', mode === 'admin');
 
   // Chaque saisie est gardée dans la vue courante (restaurée au retour sur cet onglet).
   $('#f').oninput = e => { saisies[mode][e.target.name] = e.target.value; };
