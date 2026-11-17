@@ -41,6 +41,8 @@ public class MembreRepository : IMembreRepository
         await _context.SaveChangesAsync();
         return membre ;
     }
+    public async Task<bool> EmailExisteAsync(string email) =>
+        await _context.Membres.AnyAsync(m => m.Email == email);
     public async Task DeleteAsync(Membre membre)
     {
         _context.Membres.Remove(membre);

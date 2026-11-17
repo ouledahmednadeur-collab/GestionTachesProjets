@@ -7,6 +7,7 @@ using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using GestionTachesProjets.Data;
 using Microsoft.AspNetCore.Identity;
+using GestionTachesProjets.Services;
 namespace GestionTachesProjets.Controllers;
 [ApiController]
 [Route("api/[controller]")]
@@ -18,13 +19,17 @@ public class TachesController : ControllerBase
     private readonly IMembreRepository _membres;
     private readonly AppDbContext _context ;
     private readonly UserManager<IdentityUser> _userManager ;
-    public  TachesController(ITacheRepository taches , IProjetRepository projets , IMembreRepository membres , AppDbContext context , UserManager<IdentityUser> userManager)
+    private readonly INotificationService _notifications ;
+    private readonly IPermissionService _permissions ;
+    public  TachesController(ITacheRepository taches , IProjetRepository projets , IMembreRepository membres , AppDbContext context , UserManager<IdentityUser> userManager , INotificationService notifications , IPermissionService permissions)
     {
         _taches=taches;
         _membres=membres;
         _projets=projets;
         _context=context;
         _userManager=userManager;
+        _notifications=notifications;
+        _permissions=permissions;
     }
 [HttpGet("/api/projets/{projetId}/taches")]
     public async Task<ActionResult<PagedResult<TacheDto>>> GetByProjet(
@@ -82,6 +87,11 @@ public class TachesController : ControllerBase
     {
         if (await _projets.GetByIdAsync(dto.ProjetId)==null)
         return NotFound("projet introuvable");
+        // Admin, ou membre qui a le privilège « taches.creer » DANS CE projet (rôle affecté au
+        // projet + toujours membre du projet, droits relus en base à chaque requête) ; sinon 403
+        if (!User.IsInRole("Admin")
+            && !await _permissions.AUtilisateurPrivilegeAsync(User, Permissions.TachesCreer, dto.ProjetId))
+            return Forbid();
         var tache = new Tache
         {
             Titre= dto.Titre,
@@ -89,18 +99,43 @@ public class TachesController : ControllerBase
             ProjetId=dto.ProjetId
         };
         await _taches.AddAsync(tache);
+        // notification « tâche ajoutée » aux membres du projet (pas aux admins), sauf l'auteur ;
+        // auteur lu dans le token ; une erreur de notification n'annule pas la création
+        var auteur = EmailToken();
+        await _notifications.TacheAjouteeAsync(tache, auteur,
+            await _notifications.NomAuteurAsync(auteur, User.IsInRole("Admin")));
         return CreatedAtAction(nameof(GetById),new {id=tache.Id},ToDto(tache));
     }
+    // email du compte connecté, lu dans le token (jamais envoyé par le client)
+    private string? EmailToken() => User.FindFirstValue(ClaimTypes.Email) ?? User.Identity?.Name;
 [HttpPut("{id}/affecter")]
-[Authorize(Roles ="Admin")]
     public async Task<ActionResult<TacheDto>> Affecter(int id , AffecterTacheDto dto)
     {
+        // Admin : comme avant. Sinon il faut le privilège « taches.affecter » DANS LE PROJET de la
+        // tâche (affectation de rôle par projet, droits relus en base à chaque requête), sinon 403
+        var admin = User.IsInRole("Admin");
         var tache = await _taches.GetByIdAsync(id);
         if (tache==null) return NotFound("Tache introuvable");
-        if (await _membres.GetByIdAsync(dto.MembreId)==null) 
+        if (!admin && !await _permissions.AUtilisateurPrivilegeAsync(User, Permissions.TachesAffecter, tache.ProjetId))
+            return Forbid();
+        if (await _membres.GetByIdAsync(dto.MembreId)==null)
         return NotFound("Membre introuvable");
+        // le membre destinataire doit aussi être membre de ce projet (ou être la personne qui affecte)
+        if (!admin)
+        {
+            var moi = await _context.Membres.FirstOrDefaultAsync(m => m.Email == EmailToken());
+            if (moi == null) return Forbid();
+            if (dto.MembreId != moi.Id && !await _permissions.MembreIdDansProjetAsync(dto.MembreId, tache.ProjetId))
+                return Forbid();
+        }
+        var ancienMembre = tache.MembreId;   // pour ne notifier qu'une vraie (ré)affectation
         tache.MembreId=dto.MembreId;
         await _taches.UpdateAsync(tache);
+        // notification « vous a affecté la tâche » au membre affecté (sauf s'il est l'auteur) ;
+        // une erreur de notification n'annule pas l'affectation
+        if (ancienMembre != tache.MembreId)
+            await _notifications.TacheAffecteeAsync(tache, EmailToken(),
+                await _notifications.NomAuteurAsync(EmailToken(), User.IsInRole("Admin")));
         return Ok(ToDto(tache));
     }
     //-------------------------------------------------------------------------------------------
@@ -114,11 +149,19 @@ public class TachesController : ControllerBase
         {
             var email=User.FindFirstValue(ClaimTypes.Email )?? User.Identity?.Name;
             var membre = await _context.Membres.FirstOrDefaultAsync(m => m.Email == email);
-            if (membre == null || tache.MembreId !=membre.Id)
+            // règle actuelle : le membre affecté ; EN PLUS : privilège « taches.statut » DANS LE PROJET
+            // de la tâche (rôle affecté à ce projet + toujours membre du projet, relu en base)
+            var affecte = membre != null && tache.MembreId == membre.Id;
+            if (!affecte && !await _permissions.AUtilisateurPrivilegeAsync(User, Permissions.TachesStatut, tache.ProjetId))
             return Forbid();
         }
+        var ancien = tache.Statut;   // pour savoir si le statut change vraiment
         tache.Statut=dto.Statut ;
         await _taches.UpdateAsync(tache);
+        // notifications après la mise à jour réussie (membres du projet + admins, sauf l'auteur,
+        // seulement si le statut a changé) ; une erreur de notification n'annule pas la modification
+        await _notifications.StatutTacheAsync(tache, ancien, EmailToken(),
+            await _notifications.NomAuteurAsync(EmailToken(), User.IsInRole("Admin")));
         return Ok(ToDto(tache));
         }
         //-------------------------------------------------------------------------------------------

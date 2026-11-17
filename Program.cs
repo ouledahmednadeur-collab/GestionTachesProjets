@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using GestionTachesProjets.Data ;
 using Microsoft.EntityFrameworkCore;
 using GestionTachesProjets.Repositories;
+using GestionTachesProjets.Services;
 using Microsoft.AspNetCore.Identity ;
 using Microsoft.OpenApi;
 var builder = WebApplication.CreateBuilder(args);
@@ -20,6 +21,10 @@ builder.Services.AddScoped<IMembreRepository ,MembreRepository>();
 builder.Services.AddScoped<ITacheRepository ,TacheRepository>();
 builder.Services.AddScoped<ICommentaireRepository ,CommentaireRepository>();
 builder.Services.AddScoped<IMessageRepository ,MessageRepository>();
+builder.Services.AddScoped<INotificationRepository ,NotificationRepository>();
+builder.Services.AddScoped<INotificationService ,NotificationService>();   // création des notifications
+builder.Services.AddScoped<IPermissionService ,PermissionService>();       // privilèges des rôles
+builder.Services.AddScoped<IAffectationRoleRepository ,AffectationRoleRepository>();   // rôles par projet
 // hedhi seeee7bi el Injection De Dependance , wa9telli classe men les classe 
 // test7a9 IProjetRepository fel constructeur mte3ha , houni na3tiwha ProjetRepository
 builder.Services.AddEndpointsApiExplorer();

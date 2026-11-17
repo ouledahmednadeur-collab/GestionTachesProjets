@@ -8,4 +8,5 @@ public interface IMembreRepository
     Task<Membre> AddAsync(Membre membre);
     Task<Membre> UpdateAsync(Membre membre);
     Task  DeleteAsync(Membre membre);
+    Task<bool> EmailExisteAsync(string email);   // un membre a-t-il déjà cet email ?
 }

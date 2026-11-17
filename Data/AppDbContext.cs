@@ -59,9 +59,26 @@ protected override void OnModelCreating(ModelBuilder builder)
         // index pour lire vite une conversation dans l'ordre des dates
         builder.Entity<Message>()
         .HasIndex(m=>new { m.ExpediteurId, m.DestinataireId, m.DateEnvoi });
+        // index pour lister vite les notifications d'un destinataire (non lues, par date)
+        builder.Entity<Notification>()
+        .HasIndex(n=>new { n.DestinataireEmail, n.Lue, n.DateCreation });
+        // commentaires : MembreId devenu facultatif (commentaire d'Admin sans fiche) ; on garde le
+        // comportement d'avant à la suppression d'un membre (ses commentaires sont supprimés)
+        builder.Entity<Commentaire>()
+        .HasOne(c=>c.Membre).WithMany().HasForeignKey(c=>c.MembreId).OnDelete(DeleteBehavior.Cascade);
+        // rôles par projet : supprimer le membre ou le projet supprime ses affectations ;
+        // une même affectation (membre, projet, rôle) n'existe qu'une fois
+        builder.Entity<AffectationRole>()
+        .HasOne(a=>a.Membre).WithMany().HasForeignKey(a=>a.MembreId).OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<AffectationRole>()
+        .HasOne(a=>a.Projet).WithMany().HasForeignKey(a=>a.ProjetId).OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<AffectationRole>()
+        .HasIndex(a=>new { a.MembreId, a.ProjetId, a.NomRole }).IsUnique();
     }
 public DbSet<Commentaire> Commentaires=> Set<Commentaire>();
 public DbSet<Message> Messages => Set<Message>();
+public DbSet<Notification> Notifications => Set<Notification>();
+public DbSet<AffectationRole> AffectationsRoles => Set<AffectationRole>();
 }
 
 

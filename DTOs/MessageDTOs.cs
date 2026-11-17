@@ -4,7 +4,8 @@ namespace GestionTachesProjets.DTOs;
 // envoi d'un message : l'expéditeur n'est JAMAIS envoyé par le client (il vient du token)
 public class EnvoyerMessageDto
 {
-    [Range(1, int.MaxValue, ErrorMessage = "DestinataireId invalide")]
+    // 0 = l'Administrateur (compte Admin, sans fiche Membre)
+    [Range(0, int.MaxValue, ErrorMessage = "DestinataireId invalide")]
     public int DestinataireId {get;set;}
     [Required(ErrorMessage = "le contenu est obligatoire")]
     [StringLength(1000, MinimumLength = 1, ErrorMessage = "le contenu doit faire entre 1 et 1000 caractères")]
@@ -28,8 +29,9 @@ public class MessageDto
 // résumé d'une conversation : l'interlocuteur, le dernier message et le nombre de non lus
 public class ConversationDto
 {
-    public int InterlocuteurId {get;set;}
+    public int InterlocuteurId {get;set;}       // 0 = l'Administrateur
     public string Nom {get;set;} = string.Empty;
+    public bool EstAdmin {get;set;}              // interlocuteur Admin (badge « Admin »)
     public string Email {get;set;} = string.Empty;
     public string Extrait {get;set;} = string.Empty;
     public DateTime DateDernierMessage {get;set;}

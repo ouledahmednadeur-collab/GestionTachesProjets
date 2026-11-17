@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens ;
 using Microsoft.EntityFrameworkCore;
+using GestionTachesProjets.Services;
+using Microsoft.AspNetCore.Authorization;
 namespace GestionTachesProjets.Controllers ;
 [ApiController]
 [Route("api/[controller]")]
@@ -16,11 +18,22 @@ public class AuthController : ControllerBase
     private readonly UserManager<IdentityUser> _userManager ;
     private readonly IConfiguration _config ;
     private readonly AppDbContext _context ;
-    public AuthController(UserManager<IdentityUser> userManager , IConfiguration config ,AppDbContext context)
+    private readonly IPermissionService _permissions ;
+    public AuthController(UserManager<IdentityUser> userManager , IConfiguration config ,AppDbContext context , IPermissionService permissions)
     {
         _userManager=userManager ;
         _config=config ;
         _context=context;
+        _permissions=permissions;
+    }
+    // privilèges effectifs de l'utilisateur CONNECTÉ (identité lue dans le token, jamais un autre
+    // utilisateur ; droits relus en base) : pour que le front affiche les bons boutons
+    [HttpGet("privileges")]
+    [Authorize]
+    public async Task<ActionResult> MesPrivileges()
+    {
+        // uniquement le connecté (identité lue dans le token) : Admin, ou droits détaillés par projet
+        return Ok(await _permissions.MesDroitsAsync(User));
     }
 [HttpPost("register")]
 public async Task<IActionResult> Register(RegisterDto dto)

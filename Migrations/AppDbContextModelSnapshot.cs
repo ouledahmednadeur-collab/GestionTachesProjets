@@ -17,11 +17,42 @@ namespace GestionTachesProjets.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.14");
 
+            modelBuilder.Entity("GestionTachesProjets.Models.AffectationRole", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MembreId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("NomRole")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ProjetId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProjetId");
+
+                    b.HasIndex("MembreId", "ProjetId", "NomRole")
+                        .IsUnique();
+
+                    b.ToTable("AffectationsRoles");
+                });
+
             modelBuilder.Entity("GestionTachesProjets.Models.Commentaire", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("AuteurNom")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Contenu")
                         .IsRequired()
@@ -31,7 +62,10 @@ namespace GestionTachesProjets.Migrations
                     b.Property<DateTime>("DateCreation")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("MembreId")
+                    b.Property<bool>("EstAdmin")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("MembreId")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("TacheId")
@@ -72,6 +106,10 @@ namespace GestionTachesProjets.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("AdminEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Contenu")
                         .IsRequired()
                         .HasMaxLength(1000)
@@ -83,10 +121,10 @@ namespace GestionTachesProjets.Migrations
                     b.Property<DateTime?>("DateLecture")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("DestinataireId")
+                    b.Property<int?>("DestinataireId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("ExpediteurId")
+                    b.Property<int?>("ExpediteurId")
                         .HasColumnType("INTEGER");
 
                     b.Property<bool>("Lu")
@@ -99,6 +137,44 @@ namespace GestionTachesProjets.Migrations
                     b.HasIndex("ExpediteurId", "DestinataireId", "DateEnvoi");
 
                     b.ToTable("Messages");
+                });
+
+            modelBuilder.Entity("GestionTachesProjets.Models.Notification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("DateCreation")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DestinataireEmail")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("ExpediteurMembreId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Lue")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("TacheId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Texte")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DestinataireEmail", "Lue", "DateCreation");
+
+                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("GestionTachesProjets.Models.Projet", b =>
@@ -346,13 +422,31 @@ namespace GestionTachesProjets.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("GestionTachesProjets.Models.Commentaire", b =>
+            modelBuilder.Entity("GestionTachesProjets.Models.AffectationRole", b =>
                 {
                     b.HasOne("GestionTachesProjets.Models.Membre", "Membre")
                         .WithMany()
                         .HasForeignKey("MembreId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("GestionTachesProjets.Models.Projet", "Projet")
+                        .WithMany()
+                        .HasForeignKey("ProjetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Membre");
+
+                    b.Navigation("Projet");
+                });
+
+            modelBuilder.Entity("GestionTachesProjets.Models.Commentaire", b =>
+                {
+                    b.HasOne("GestionTachesProjets.Models.Membre", "Membre")
+                        .WithMany()
+                        .HasForeignKey("MembreId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("GestionTachesProjets.Models.Tache", "Tache")
                         .WithMany("Commentaires")
@@ -370,14 +464,12 @@ namespace GestionTachesProjets.Migrations
                     b.HasOne("GestionTachesProjets.Models.Membre", "Destinataire")
                         .WithMany()
                         .HasForeignKey("DestinataireId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("GestionTachesProjets.Models.Membre", "Expediteur")
                         .WithMany()
                         .HasForeignKey("ExpediteurId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Destinataire");
 
